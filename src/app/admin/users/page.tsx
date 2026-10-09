@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
-import { Button } from "@/components/ui";
+
 
 type Profile = {
   id: string;

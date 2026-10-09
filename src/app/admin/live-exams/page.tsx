@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
-import { Button } from "@/components/ui";
+
 
 export default function LiveExamsAdminPage() {
   const { getToken } = useAuth();
@@ -112,7 +112,7 @@ export default function LiveExamsAdminPage() {
           <span className="text-sm font-medium">Publish immediately</span>
         </label>
         
-        <Button type="submit" className="self-start mt-2">Schedule Exam</Button>
+        <button type="submit" className="btn-maroon self-start mt-2">Schedule Exam</button>
       </form>
 
       <h2 className="text-xl font-bold mb-4">Existing Scheduled Exams</h2>
