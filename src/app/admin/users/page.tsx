@@ -70,7 +70,7 @@ export default function UsersAdminPage() {
           <thead className="bg-stone-100 uppercase text-stone-600">
             <tr>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Joined</th>
+              <th className="px-4 py-3">User ID</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Subscription</th>
             </tr>
@@ -80,7 +80,7 @@ export default function UsersAdminPage() {
               <tr key={u.id}>
                 <td className="px-4 py-3 font-medium">{u.full_name}</td>
                 <td className="px-4 py-3 text-stone-500">
-                  {new Date(u.created_at).toLocaleDateString()}
+                  {u.id.substring(0,8)}
                 </td>
                 <td className="px-4 py-3">
                   <select
