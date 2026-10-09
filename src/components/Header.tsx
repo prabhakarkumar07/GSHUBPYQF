@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -45,7 +45,7 @@ export function Header() {
           <div className="hidden lg:flex items-center gap-2">
             {user ? (
               <>
-                <UserButton />
+                <div className={profile?.subscription_tier === "premium" ? "rounded-full ring-2 ring-yellow-400 ring-offset-2 ring-offset-maroon-900" : ""}><UserButton /></div>
                 <SignOutButton redirectUrl="/">
                   <button className="rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10">{t("logout")}</button>
                 </SignOutButton>

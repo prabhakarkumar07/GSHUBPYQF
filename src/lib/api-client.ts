@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+﻿const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}, clerkToken?: string | null) {
   const headers: Record<string, string> = {
@@ -11,7 +11,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}, cler
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
+    cache: "no-store", ...options,
     headers,
   });
 
