@@ -9,7 +9,7 @@ import { useApp } from "./providers";
 import { IconMenu, IconX } from "./icons";
 
 export function Header() {
-  const { t, user, isAdmin } = useApp();
+  const { t, user, isAdmin, profile } = useApp();
   const path = usePathname();
   const [open, setOpen] = useState(false);
 
