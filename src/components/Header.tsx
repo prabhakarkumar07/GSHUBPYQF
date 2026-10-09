@@ -45,7 +45,7 @@ export function Header() {
           <div className="hidden lg:flex items-center gap-2">
             {user ? (
               <>
-                <div className={profile?.subscription_tier === "premium" ? "rounded-full border-2 border-[#E5C158] p-[2px] flex items-center justify-center" : "flex items-center justify-center p-[4px]"}><UserButton /></div>
+                <div className={profile?.subscription_tier === "premium" ? "rounded-full border-2 border-[#E5C158] shadow-[0_0_12px_rgba(229,193,88,0.6)] p-[2px] flex items-center justify-center" : "flex items-center justify-center p-[4px]"}><UserButton /></div>
                 <SignOutButton redirectUrl="/">
                   <button className="whitespace-nowrap rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10">{t("logout")}</button>
                 </SignOutButton>
