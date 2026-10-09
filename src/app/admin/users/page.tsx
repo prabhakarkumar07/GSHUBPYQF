@@ -37,7 +37,7 @@ export default function UsersAdminPage() {
   const updateRole = async (id: string, role: string) => {
     try {
       const token = await getToken({ template: "supabase" });
-      await fetchApi(\/admin/users/\\, {
+      await fetchApi(`/admin/users/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ role })
       }, token);
@@ -50,7 +50,7 @@ export default function UsersAdminPage() {
   const updateTier = async (id: string, subscription_tier: string) => {
     try {
       const token = await getToken({ template: "supabase" });
-      await fetchApi(\/admin/users/\\, {
+      await fetchApi(`/admin/users/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ subscription_tier })
       }, token);
