@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
+  { href: "/admin/revenue", label: "Revenue & subscribers" },
   { href: "/admin", label: "Analytics" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/live-exams", label: "Live Exams" },
