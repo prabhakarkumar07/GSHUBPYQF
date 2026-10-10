@@ -2,31 +2,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { SignOutButton, UserButton } from "@clerk/nextjs";
 import { Logo } from "./Logo";
 import { LangToggle } from "./LangToggle";
 import { useApp } from "./providers";
+import { getSupabase } from "@/lib/supabase/client";
 import { IconMenu, IconX } from "./icons";
 
 export function Header() {
-  const { t, user, isAdmin, profile } = useApp();
+  const { t, user, isAdmin } = useApp();
   const path = usePathname();
   const [open, setOpen] = useState(false);
 
   const links = [
     { href: "/practice", label: t("nav_practice") },
     { href: "/dashboard", label: t("nav_dashboard") },
-    { href: "/leaderboard", label: "Leaderboard" },
     { href: "/notebook", label: t("nav_notebook") },
     { href: "/heatmap", label: t("nav_heatmap") },
     { href: "/bookmarks", label: t("nav_bookmarks") },
-    { href: "/pricing", label: "Pricing" },
     { href: "/about", label: t("nav_about") },
     ...(isAdmin ? [{ href: "/admin", label: t("nav_admin") }] : []),
   ];
 
+  const logout = async () => {
+    await getSupabase().auth.signOut();
+    setOpen(false);
+    window.location.assign("/");
+  };
+
   return (
-    <header className="sticky top-0 z-40 border-b border-gold/30 bg-maroon-900/95 backdrop-blur-md text-white shadow-sm supports-[backdrop-filter]:bg-maroon-900/85">
+    <header className="sticky top-0 z-40 border-b border-gold/30 bg-maroon text-white">
       <div className="container-page flex h-16 items-center justify-between gap-3">
         <Logo light />
         <nav className="hidden items-center gap-1 lg:flex">
@@ -42,14 +46,9 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <LangToggle compact />
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden lg:block">
             {user ? (
-              <>
-                <div className={profile?.subscription_tier === "premium" ? "rounded-full border-2 border-[#E5C158] shadow-[0_0_12px_rgba(229,193,88,0.6)] p-[2px] flex items-center justify-center" : "flex items-center justify-center p-[4px]"}><UserButton /></div>
-                <SignOutButton redirectUrl="/">
-                  <button className="whitespace-nowrap rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10">{t("logout")}</button>
-                </SignOutButton>
-              </>
+              <button onClick={logout} className="rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10">{t("logout")}</button>
             ) : (
               <Link href="/login" className="btn-gold !py-2">{t("login")}</Link>
             )}
@@ -69,9 +68,7 @@ export function Header() {
             ))}
             <div className="mt-2 border-t border-white/10 pt-3">
               {user ? (
-                <SignOutButton redirectUrl="/">
-                  <button onClick={() => setOpen(false)} className="w-full rounded-lg px-3 py-3 text-left text-white/80">{t("logout")}</button>
-                </SignOutButton>
+                <button onClick={logout} className="w-full rounded-lg px-3 py-3 text-left text-white/80">{t("logout")}</button>
               ) : (
                 <Link href="/login" onClick={() => setOpen(false)} className="btn-gold w-full">{t("login")} / {t("signup")}</Link>
               )}

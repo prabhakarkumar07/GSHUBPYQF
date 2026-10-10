@@ -2,57 +2,43 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/providers";
-import { Empty, Spinner, Stat } from "@/components/ui";
+import { ConfigNotice, Empty, Spinner, Stat } from "@/components/ui";
 import { LineChart } from "@/components/LineChart";
-import { SubjectChart } from "@/components/SubjectChart";
 import { IconBookmark, IconGrid, IconNotebook, IconPlay } from "@/components/icons";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getActiveSession } from "@/lib/quiz-store";
 import { computeStreak, formatDuration } from "@/lib/scoring";
 import type { Attempt } from "@/lib/types";
 
 export function Dashboard() {
   const { t, user, profile, authReady, lang } = useApp();
-  const { getToken } = useAuth();
   const [attempts, setAttempts] = useState<Attempt[] | null>(null);
   const [mistakes, setMistakes] = useState<number>(0);
   const [bookmarks, setBookmarks] = useState<number>(0);
-  const [analytics, setAnalytics] = useState<any[] | null>(null);
-  const [badges, setBadges] = useState<any[]>([]);
-  const [dueFlashcards, setDueFlashcards] = useState<number>(0);
   const [resume, setResume] = useState<{ id: string; title: string; answered: number; total: number } | null>(null);
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !user || !isSupabaseConfigured) return;
     (async () => {
-      try {
-        const token = await getToken({ template: "supabase" });
-        const [dashRes, statRes, badgeRes, flashcardRes] = await Promise.all([
-          fetchApi("/user/dashboard", {}, token),
-          fetchApi("/user/analytics", {}, token),
-          fetchApi("/user/badges", {}, token),
-          fetchApi("/quiz/flashcards", {}, token),
-        ]);
-        
-        const list = (dashRes.attempts as Attempt[]) ?? [];
-        setAttempts(list);
-        setMistakes(dashRes.mistakesCount ?? 0);
-        setBookmarks(dashRes.bookmarksCount ?? 0);
-        setAnalytics(statRes.analytics ?? []);
-        setBadges(badgeRes.badges ?? []);
-        setDueFlashcards(flashcardRes.flashcards?.length || 0);
-        
-        const local = getActiveSession();
-        const remote = list.find((x) => x.status === "in_progress");
-        if (local) setResume({ id: local.id, title: local.title, answered: Object.values(local.responses).filter((r) => r.selected).length, total: local.questionIds.length });
-        else if (remote) setResume({ id: remote.id, title: remote.title ?? "Quiz", answered: Object.values(remote.responses ?? {}).filter((r: any) => r.selected).length, total: remote.question_ids.length });
-      } catch (err) {
-        console.error("Failed to load dashboard:", err);
-      }
+      const sb = getSupabase();
+      const [{ data: a }, m, b] = await Promise.all([
+        sb.from("quiz_attempts").select("*").order("started_at", { ascending: false }).limit(100),
+        sb.from("mistakes").select("question_id", { count: "exact", head: true }),
+        sb.from("bookmarks").select("question_id", { count: "exact", head: true }),
+      ]);
+      const list = (a as Attempt[]) ?? [];
+      setAttempts(list);
+      setMistakes(m.count ?? 0);
+      setBookmarks(b.count ?? 0);
+      const local = getActiveSession();
+      const remote = list.find((x) => x.status === "in_progress");
+      if (local) setResume({ id: local.id, title: local.title, answered: Object.values(local.responses).filter((r) => r.selected).length, total: local.questionIds.length });
+      else if (remote) setResume({ id: remote.id, title: remote.title ?? "Quiz", answered: Object.values(remote.responses ?? {}).filter((r) => r.selected).length, total: remote.question_ids.length });
     })();
   }, [authReady, user]);
 
+  if (!isSupabaseConfigured) return <div className="container-page py-10"><ConfigNotice /></div>;
   if (!authReady || attempts === null) return <Spinner label={t("loading")} />;
 
   const done = attempts.filter((a) => a.status === "submitted");
@@ -85,18 +71,6 @@ export function Dashboard() {
         </Link>
       )}
 
-      {dueFlashcards > 0 && (
-        <Link href={`/flashcards`} className="mb-5 flex items-center gap-4 rounded-2xl border border-blue-300 bg-blue-50 p-4 transition-all hover:shadow-lg hover:-translate-y-0.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><IconNotebook /></span>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-bold uppercase tracking-wide text-blue-800">Spaced Repetition</div>
-            <div className="truncate font-semibold text-blue-900">Daily Flashcard Review</div>
-            <div className="text-xs text-blue-700">You have {dueFlashcards} questions due for review today!</div>
-          </div>
-          <span className="font-semibold text-blue-600">→</span>
-        </Link>
-      )}
-
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat accent label={t("streak")} value={<span>🔥 {streak}</span>} hint={t("days")} />
         <Stat label={t("overall_accuracy")} value={`${overall}%`} />
@@ -111,54 +85,10 @@ export function Dashboard() {
         <QuickLink href="/bookmarks" icon={<IconBookmark />} label={t("nav_bookmarks")} count={bookmarks} />
       </div>
 
-      <div className="mt-6 flex flex-col md:flex-row gap-4">
-        <div className="card p-5 flex-1 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100 flex flex-col justify-between">
-          <div>
-            <h3 className="font-bold text-indigo-900 mb-1 flex items-center gap-2">⚔️ Challenge a Friend</h3>
-            <p className="text-sm text-indigo-700/80 mb-4">Generate a 10-question duel link and see who scores higher.</p>
-          </div>
-          <button 
-            onClick={async () => {
-              try {
-                const token = await getToken({ template: "supabase" });
-                const res = await fetchApi("/challenge/create", { method: "POST", body: "{}" }, token);
-                window.location.href = `/challenge/${res.challengeId}`;
-              } catch (e) {
-                alert("Failed to create challenge.");
-              }
-            }}
-            className="w-full py-2.5 rounded-lg bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition"
-          >
-            Create Duel Link
-          </button>
-        </div>
-      </div>
-
-      {badges && badges.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 font-bold text-maroon">Your Badges</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {badges.map((b) => (
-              <div key={b.badge_id} className="flex flex-col items-center gap-1 rounded-xl bg-gold-50 p-3 border border-gold/30 min-w-[80px]">
-                <div className="text-3xl">🏅</div>
-                <div className="text-xs font-semibold text-maroon uppercase">{b.badge_id}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       <section className="card mt-6 p-5">
         <h2 className="mb-3 font-bold text-maroon">{t("accuracy_trend")}</h2>
         {trend.length ? <LineChart points={trend} label={t("accuracy_trend")} /> : <p className="text-sm text-stone-500">{t("no_history")}</p>}
       </section>
-
-      {analytics && analytics.length > 0 && (
-        <section className="card mt-6 p-5">
-          <h2 className="mb-3 font-bold text-maroon">Subject-Wise Mastery</h2>
-          <SubjectChart data={analytics} />
-        </section>
-      )}
 
       <section className="mt-6">
         <h2 className="h-display mb-3 text-xl">{t("quiz_history")}</h2>
@@ -202,7 +132,7 @@ export function Dashboard() {
 
 function QuickLink({ href, icon, label, count }: { href: string; icon: React.ReactNode; label: string; count?: number }) {
   return (
-    <Link href={href} className="card card-hover flex items-center gap-3 p-3.5 transition-all cursor-pointer">
+    <Link href={href} className="card flex items-center gap-3 p-3.5 transition hover:border-maroon/30">
       <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-maroon-50 text-maroon">{icon}</span>
       <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{label}</span>
       {count !== undefined && <span className="rounded-full bg-maroon px-2 py-0.5 text-xs font-bold text-white">{count}</span>}

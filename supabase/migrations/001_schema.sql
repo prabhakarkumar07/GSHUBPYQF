@@ -10,7 +10,7 @@ create extension if not exists pgcrypto;
 -- Profiles & roles
 -- ---------------------------------------------------------------------
 create table public.profiles (
-  id             text primary key,
+  id             uuid primary key references auth.users(id) on delete cascade,
   full_name      text,
   phone          text,
   role           text not null default 'student' check (role in ('student','admin')),
@@ -37,7 +37,7 @@ create trigger on_auth_user_created
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = (auth.jwt()->>'sub') and role = 'admin');
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
 $$;
 
 -- ---------------------------------------------------------------------
@@ -99,7 +99,7 @@ create table public.questions (
   is_high_priority boolean not null default false,   -- manual flag by staff
   theme            text,                             -- repeated-theme tag, e.g. 'champaran'
   source           text not null default 'pyq',      -- 'pyq' | 'sample' | 'current_affairs' | 'test_series'
-  created_by       text default (auth.jwt()->>'sub'),
+  created_by       uuid references auth.users(id) on delete set null default auth.uid(),
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
@@ -146,7 +146,7 @@ insert into public.app_settings (id) values (1) on conflict do nothing;
 -- ---------------------------------------------------------------------
 create table public.quiz_attempts (
   id              uuid primary key default gen_random_uuid(),
-  user_id         text not null default (auth.jwt()->>'sub'),
+  user_id         uuid not null default auth.uid() references auth.users(id) on delete cascade,
   title           text,
   mode            text not null check (mode in ('practice','exam')),
   source          text not null default 'all' check (source in ('all','bookmarks','mistakes')),
@@ -176,7 +176,7 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare s public.app_settings;
 begin
   select * into s from public.app_settings where id = 1;
-  new.user_id        := (auth.jwt()->>'sub');
+  new.user_id        := auth.uid();
   new.positive_marks := s.positive_marks;
   new.negative_marks := s.negative_marks;
   new.time_limit_sec := case when new.mode = 'exam'
@@ -200,7 +200,7 @@ create trigger quiz_attempts_touch before update on public.quiz_attempts
 create table public.attempt_answers (
   id              bigint generated always as identity primary key,
   attempt_id      uuid not null references public.quiz_attempts(id) on delete cascade,
-  user_id         text not null,
+  user_id         uuid not null references auth.users(id) on delete cascade,
   question_id     uuid not null references public.questions(id) on delete cascade,
   selected_option text not null,
   is_correct      boolean not null,
@@ -215,7 +215,7 @@ create index on public.attempt_answers (user_id, answered_at);
 -- Bookmarks & Mistake Notebook
 -- ---------------------------------------------------------------------
 create table public.bookmarks (
-  user_id     text not null default (auth.jwt()->>'sub'),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
   question_id uuid not null references public.questions(id) on delete cascade,
   note        text check (char_length(note) <= 500),
   created_at  timestamptz not null default now(),
@@ -223,7 +223,7 @@ create table public.bookmarks (
 );
 
 create table public.mistakes (
-  user_id         text not null,
+  user_id         uuid not null references auth.users(id) on delete cascade,
   question_id     uuid not null references public.questions(id) on delete cascade,
   last_selected   text,
   times_missed    int not null default 1,
@@ -237,7 +237,7 @@ create table public.mistakes (
 -- ---------------------------------------------------------------------
 create table public.feedback (
   id         bigint generated always as identity primary key,
-  user_id    text default (auth.jwt()->>'sub'),
+  user_id    uuid default auth.uid() references auth.users(id) on delete set null,
   kind       text not null default 'feedback' check (kind in ('feedback','feature','bug')),
   page       text,
   message    text not null check (char_length(message) between 3 and 2000),
@@ -261,9 +261,8 @@ alter table public.mistakes        enable row level security;
 alter table public.feedback        enable row level security;
 
 -- profiles: own row (admins can read all). Role column can't be self-edited.
-create policy "profiles: read own"   on public.profiles for select using (id = (auth.jwt()->>'sub') or public.is_admin());
-create policy "profiles: insert own" on public.profiles for insert with check (id = (auth.jwt()->>'sub'));
-create policy "profiles: update own" on public.profiles for update using (id = (auth.jwt()->>'sub')) with check (id = (auth.jwt()->>'sub'));
+create policy "profiles: read own"   on public.profiles for select using (id = auth.uid() or public.is_admin());
+create policy "profiles: update own" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
 revoke update on public.profiles from anon, authenticated;
 grant update (full_name, phone, preferred_lang) on public.profiles to authenticated;
 
@@ -282,26 +281,26 @@ create policy "questions: read live" on public.questions for select using (not i
 create policy "questions: admin write" on public.questions for all using (public.is_admin()) with check (public.is_admin());
 
 -- quiz attempts: own rows only; scored fields are written only by submit_attempt()
-create policy "attempts: read own"   on public.quiz_attempts for select using (user_id = (auth.jwt()->>'sub'));
-create policy "attempts: insert own" on public.quiz_attempts for insert with check ((auth.jwt()->>'sub') is not null);
+create policy "attempts: read own"   on public.quiz_attempts for select using (user_id = auth.uid());
+create policy "attempts: insert own" on public.quiz_attempts for insert with check (auth.uid() is not null);
 create policy "attempts: update own in-progress" on public.quiz_attempts for update
-  using (user_id = (auth.jwt()->>'sub') and status = 'in_progress')
-  with check (user_id = (auth.jwt()->>'sub') and status = 'in_progress');
-create policy "attempts: delete own" on public.quiz_attempts for delete using (user_id = (auth.jwt()->>'sub'));
+  using (user_id = auth.uid() and status = 'in_progress')
+  with check (user_id = auth.uid() and status = 'in_progress');
+create policy "attempts: delete own" on public.quiz_attempts for delete using (user_id = auth.uid());
 revoke update on public.quiz_attempts from anon, authenticated;
 grant update (responses, current_index, title) on public.quiz_attempts to authenticated;
 
 -- answers & mistakes: read own; writes only through security-definer RPCs
-create policy "answers: read own"  on public.attempt_answers for select using (user_id = (auth.jwt()->>'sub'));
-create policy "mistakes: read own" on public.mistakes for select using (user_id = (auth.jwt()->>'sub'));
-create policy "mistakes: delete own" on public.mistakes for delete using (user_id = (auth.jwt()->>'sub'));
+create policy "answers: read own"  on public.attempt_answers for select using (user_id = auth.uid());
+create policy "mistakes: read own" on public.mistakes for select using (user_id = auth.uid());
+create policy "mistakes: delete own" on public.mistakes for delete using (user_id = auth.uid());
 
 -- bookmarks: full control of own
 create policy "bookmarks: own" on public.bookmarks for all
-  using (user_id = (auth.jwt()->>'sub')) with check (user_id = (auth.jwt()->>'sub'));
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- feedback: anyone can submit, only admins read
-create policy "feedback: submit" on public.feedback for insert with check (user_id is null or user_id = (auth.jwt()->>'sub'));
+create policy "feedback: submit" on public.feedback for insert with check (user_id is null or user_id = auth.uid());
 create policy "feedback: admin read" on public.feedback for select using (public.is_admin());
 create policy "feedback: admin delete" on public.feedback for delete using (public.is_admin());
 
@@ -310,7 +309,7 @@ create policy "feedback: admin delete" on public.feedback for delete using (publ
 -- =====================================================================
 
 -- Internal: record one answer, update the Mistake Notebook. Returns the effect.
-create or replace function public._apply_answer(p_attempt uuid, p_user text, p_qid uuid, p_selected text)
+create or replace function public._apply_answer(p_attempt uuid, p_user uuid, p_qid uuid, p_selected text)
 returns text language plpgsql security definer set search_path = public as $$
 declare
   v_correct text;
@@ -345,7 +344,7 @@ begin
   values (p_attempt, p_user, p_qid, p_selected, p_selected = v_correct, v_effect);
   return v_effect;
 end $$;
-revoke all on function public._apply_answer(uuid, text, uuid, text) from public, anon, authenticated;
+revoke all on function public._apply_answer(uuid, uuid, uuid, text) from public, anon, authenticated;
 
 -- Practice mode: lock in one answer immediately.
 create or replace function public.record_practice_answer(p_attempt uuid, p_question uuid, p_selected text)
@@ -356,7 +355,7 @@ declare
   v_correct text;
 begin
   select * into a from public.quiz_attempts where id = p_attempt;
-  if a.id is null or a.user_id <> (auth.jwt()->>'sub') then raise exception 'Attempt not found'; end if;
+  if a.id is null or a.user_id <> auth.uid() then raise exception 'Attempt not found'; end if;
   if a.status <> 'in_progress' or a.mode <> 'practice' then raise exception 'Attempt is not an open practice quiz'; end if;
   if not (p_question = any (a.question_ids)) then raise exception 'Question not in this quiz'; end if;
 
@@ -377,7 +376,7 @@ declare
   v_correct int; v_wrong int; v_total int; v_score numeric;
 begin
   select * into a from public.quiz_attempts where id = p_attempt for update;
-  if a.id is null or a.user_id <> (auth.jwt()->>'sub') then raise exception 'Attempt not found'; end if;
+  if a.id is null or a.user_id <> auth.uid() then raise exception 'Attempt not found'; end if;
   if a.status = 'submitted' then
     return jsonb_build_object('already_submitted', true, 'score', a.score);
   end if;
@@ -426,8 +425,8 @@ create or replace function public.build_quiz(
       and (p_exam_ids    is null or cardinality(p_exam_ids)    = 0 or q.exam_id    = any (p_exam_ids))
       and (
         p_source = 'all'
-        or (p_source = 'bookmarks' and exists (select 1 from public.bookmarks b where b.user_id = (auth.jwt()->>'sub') and b.question_id = q.id))
-        or (p_source = 'mistakes'  and exists (select 1 from public.mistakes  m where m.user_id = (auth.jwt()->>'sub') and m.question_id = q.id))
+        or (p_source = 'bookmarks' and exists (select 1 from public.bookmarks b where b.user_id = auth.uid() and b.question_id = q.id))
+        or (p_source = 'mistakes'  and exists (select 1 from public.mistakes  m where m.user_id = auth.uid() and m.question_id = q.id))
       )
       and (not p_high_priority_only or public.high_priority(q))
     order by random()
@@ -480,7 +479,7 @@ language sql stable security invoker set search_path = public as $$
   select q.subject_id, q.topic_id, count(*)::int, count(*) filter (where aa.is_correct)::int
   from public.attempt_answers aa
   join public.questions q on q.id = aa.question_id
-  where aa.user_id = (auth.jwt()->>'sub')
+  where aa.user_id = auth.uid()
   group by q.subject_id, q.topic_id;
 $$;
 
@@ -491,7 +490,7 @@ language sql stable security invoker set search_path = public as $$
   select q.subject_id, q.topic_id, count(*)::int, count(*) filter (where public.high_priority(q))::int
   from public.mistakes m
   join public.questions q on q.id = m.question_id
-  where m.user_id = (auth.jwt()->>'sub')
+  where m.user_id = auth.uid()
   group by q.subject_id, q.topic_id;
 $$;
 

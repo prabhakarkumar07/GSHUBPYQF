@@ -12,6 +12,11 @@ CREATE TABLE IF NOT EXISTS public.challenges (
 
 ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first so this script is safe to re-run
+DROP POLICY IF EXISTS "challenges: public read"    ON public.challenges;
+DROP POLICY IF EXISTS "challenges: creator insert" ON public.challenges;
+DROP POLICY IF EXISTS "challenges: update"         ON public.challenges;
+
 -- Anyone who knows the challenge ID can view it (needed to join via link)
 CREATE POLICY "challenges: public read"
 ON public.challenges FOR SELECT
@@ -26,3 +31,4 @@ ON public.challenges FOR UPDATE
 USING (
   creator_id = (auth.jwt()->>'sub') OR opponent_id = (auth.jwt()->>'sub')
 );
+

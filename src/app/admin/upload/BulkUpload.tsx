@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import Papa from "papaparse";
 import readXlsxFile from "read-excel-file";
 import { useApp } from "@/components/providers";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
 import { stripHtml, textToHtml } from "@/lib/html";
 import type { Exam, OptionKey, Subject, Topic } from "@/lib/types";
 
@@ -37,14 +36,24 @@ function normaliseRow(r: Record<string, unknown>): Raw {
   return out;
 }
 
-export function BulkUpload() {
+export interface BulkUploadProps {
+  /** When set, questions are imported into this test (not the practice bank). */
+  testId?: string;
+  /** Used when a row's Subject is empty or unknown (test uploads only). */
+  defaultSubjectId?: number;
+  /** test_position of the first imported row (append after existing questions). */
+  startPosition?: number;
+  onImported?: (n: number) => void;
+  embedded?: boolean;
+}
+
+export function BulkUpload({ testId, defaultSubjectId, startPosition = 0, onImported, embedded }: BulkUploadProps = {}) {
   const { taxonomy, reloadTaxonomy } = useApp();
   const [rows, setRows] = useState<Parsed[] | null>(null);
   const [fileName, setFileName] = useState("");
   const [createMissing, setCreateMissing] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const { getToken } = useAuth();
 
   const downloadTemplate = () => {
     const example = [
@@ -88,9 +97,10 @@ export function BulkUpload() {
   const validate = (r: Raw, row: number): Parsed => {
     const errors: string[] = [];
     const p: Parsed = { row, raw: r, errors };
-    const qEn = r["questionen"];
-    if (!qEn) errors.push("Question_En is empty");
-    const subject = findSubject(r["subject"]);
+    const qEn = r["questionen"] || (testId ? r["questionhi"] : "");
+    if (!qEn) errors.push(testId ? "Question is empty" : "Question_En is empty");
+    let subject = findSubject(r["subject"]);
+    if (!subject && testId && defaultSubjectId) subject = taxonomy.subjects.find((x) => x.id === defaultSubjectId);
     if (!subject) errors.push(`Unknown subject “${r["subject"] || ""}”`);
     p.subject = subject;
     if (subject && r["topic"]) {
@@ -101,7 +111,10 @@ export function BulkUpload() {
     p.exam = findExam(r["exam"], year);
     if (!p.exam && r["exam"]) { p.examName = r["exam"]; if (!createMissing) errors.push(`Unknown exam “${r["exam"]}”`); }
 
-    const options = KEYS.map((k) => ({ key: k, en: r[`option${k.toLowerCase()}en`] ?? "", hi: r[`option${k.toLowerCase()}hi`] ?? "" }))
+    const options = KEYS.map((k) => {
+      const en = r[`option${k.toLowerCase()}en`] ?? "", hi = r[`option${k.toLowerCase()}hi`] ?? "";
+      return { key: k, en: en || (testId ? hi : ""), hi };
+    })
       .filter((o) => o.en || o.hi);
     if (options.length < 2) errors.push("Need at least 2 options");
     if (options.some((o, i) => o.key !== KEYS[i])) errors.push("Options must be filled in order A, B, C…");
@@ -127,59 +140,56 @@ export function BulkUpload() {
       is_dropped: truthy(r["isdropped"]),
       is_high_priority: truthy(r["highpriority"]),
       theme: r["theme"] ? r["theme"].toLowerCase().replace(/\s+/g, "-") : null,
-      source: "pyq",
+      source: testId ? "test_series" : "pyq",
+      ...(testId ? { test_id: testId } : {}),
     };
     return p;
   };
 
   // re-check rows when the "create missing" option changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setRows((rs) => (rs ? rs.map((p) => validate(p.raw, p.row)) : rs)); }, [createMissing, taxonomy]);
+  useEffect(() => { setRows((rs) => (rs ? rs.map((p) => validate(p.raw, p.row)) : rs)); }, [createMissing, taxonomy, defaultSubjectId]);
 
   const doImport = async () => {
     if (!rows) return;
     const valid = rows.filter((r) => r.errors.length === 0);
     if (!valid.length) return;
     setBusy(true); setResult(null);
+    const sb = getSupabase();
     try {
-      const token = await getToken({ template: "supabase" });
       // create missing exams & topics first
       const examIds = new Map<string, number>();
       for (const name of [...new Set(valid.filter((r) => !r.exam && r.examName).map((r) => r.examName!))]) {
         const year = valid.find((r) => r.examName === name)?.payload?.year as number | null;
-        await fetchApi("/admin/taxonomy/exams", {
-          method: "POST",
-          body: JSON.stringify({ short_name: name.slice(0, 40), name_en: name, name_hi: name, year, sort_order: 999 })
-        }, token);
-        // Reload taxonomy to get IDs
-        await reloadTaxonomy();
-        const latest = (await import("@/lib/api-client")).fetchApi("/taxonomy", {});
-        // We'll just continue, but without IDs we can't map them easily unless we fetch.
-        // Actually, since we created an endpoint /admin/questions/upload, we can send all rows to the backend and let the backend handle insertion!
-        // But the backend endpoint currently just accepts `rows` and inserts them to `questions`. It doesn't create taxonomy.
-        // So I'll modify the backend or just use fetchApi calls. Let's keep it simple.
-        throw new Error("Bulk creating exams is not yet supported via API.");
+        const { data, error } = await sb.from("exams").insert({ short_name: name.slice(0, 40), name_en: name, name_hi: name, year, sort_order: 999 }).select("id").single();
+        if (error) throw new Error(`Creating exam “${name}”: ${error.message}`);
+        examIds.set(name, data.id);
       }
       const topicIds = new Map<string, number>();
       for (const r of valid.filter((x) => !x.topic && x.topicName && x.subject)) {
-        throw new Error("Bulk creating topics is not yet supported via API.");
+        const key = `${r.subject!.id}::${norm(r.topicName)}`;
+        if (topicIds.has(key)) continue;
+        const slug = r.topicName!.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `topic-${Date.now()}`;
+        const { data, error } = await sb.from("topics").insert({ subject_id: r.subject!.id, slug, name_en: r.topicName, name_hi: r.topicName, sort_order: 999 }).select("id").single();
+        if (error) throw new Error(`Creating topic “${r.topicName}”: ${error.message}`);
+        topicIds.set(key, data.id);
       }
-      const payloads = valid.map((r) => ({
+      const payloads = valid.map((r, i) => ({
         ...r.payload,
+        ...(testId ? { test_position: startPosition + i + 1 } : {}),
         subject_id: r.subject!.id,
-        topic_id: r.topic?.id ?? null,
-        exam_id: r.exam?.id ?? null,
+        topic_id: r.topic?.id ?? (r.topicName ? topicIds.get(`${r.subject!.id}::${norm(r.topicName)}`) : null) ?? null,
+        exam_id: r.exam?.id ?? (r.examName ? examIds.get(r.examName) : null) ?? null,
       }));
       let inserted = 0;
       for (let i = 0; i < payloads.length; i += 100) {
-        const res = await fetchApi("/admin/questions/upload", {
-          method: "POST",
-          body: JSON.stringify({ rows: payloads.slice(i, i + 100) })
-        }, token);
-        inserted += res.count || 0;
+        const { error } = await sb.from("questions").insert(payloads.slice(i, i + 100));
+        if (error) throw new Error(`Rows ${i + 1}–${i + 100}: ${error.message}`);
+        inserted += Math.min(100, payloads.length - i);
       }
       setResult(`Imported ${inserted} question${inserted === 1 ? "" : "s"}${examIds.size ? `, created ${examIds.size} exam(s)` : ""}${topicIds.size ? `, created ${topicIds.size} topic(s)` : ""}.`);
       setRows(null);
+      onImported?.(inserted);
       await reloadTaxonomy();
     } catch (e) {
       setResult("Import stopped: " + (e as Error).message);
@@ -194,10 +204,14 @@ export function BulkUpload() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
+        {embedded ? (
+          <p className="max-w-2xl text-sm text-stone-600">Same Excel/CSV format as Bulk upload. Questions are added to <b>this test only</b>, in file order. Hindi-only questions are fine. If Subject is empty, the default subject below is used.</p>
+        ) : (
         <div>
           <h1 className="h-display text-2xl">Bulk upload (Excel / CSV)</h1>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">One question per row. Subject must match an existing subject (English or Hindi name). Unknown topics and exams can be created automatically. Plain text is converted to paragraphs; HTML (e.g. a &lt;table&gt; for Match List-I/II) is kept as is.</p>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">One question per row. Subject must match an existing subject (English or Hindi name). Unknown topics and exams can be created automatically. Plain text is converted to paragraphs; HTML (e.g. a &lt;table&gt; for Match List-I/II) is kept as is. For PYQ full-length tests and monthly MCQs, upload from <b>Admin → Tests</b> instead.</p>
         </div>
+        )}
         <button onClick={downloadTemplate} className="btn-outline">⬇ Download template</button>
       </div>
 

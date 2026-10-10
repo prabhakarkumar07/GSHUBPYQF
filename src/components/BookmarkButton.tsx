@@ -2,8 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useApp } from "./providers";
 import { IconBookmark } from "./icons";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
 
 /** Toggle bookmark. `bookmarked` state is owned by the parent so lists stay in sync. */
 export function BookmarkButton({ questionId, bookmarked, onChange, size = "md" }: {
@@ -11,19 +10,14 @@ export function BookmarkButton({ questionId, bookmarked, onChange, size = "md" }
 }) {
   const { t, user } = useApp();
   const router = useRouter();
-  const { getToken } = useAuth();
   const toggle = async () => {
     if (!user) { router.push("/login?next=" + encodeURIComponent(window.location.pathname)); return; }
+    const sb = getSupabase();
     onChange(!bookmarked); // optimistic
-    try {
-      const token = await getToken({ template: "supabase" });
-      await fetchApi("/user/bookmarks/toggle", {
-        method: "POST",
-        body: JSON.stringify({ questionId, isBookmarked: bookmarked })
-      }, token);
-    } catch (error) {
-      onChange(bookmarked);
-    }
+    const { error } = bookmarked
+      ? await sb.from("bookmarks").delete().eq("user_id", user.id).eq("question_id", questionId)
+      : await sb.from("bookmarks").insert({ question_id: questionId, user_id: user.id });
+    if (error) onChange(bookmarked);
   };
   return (
     <button

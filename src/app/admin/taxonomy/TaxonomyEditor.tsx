@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useApp } from "@/components/providers";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Exam, Subject, Topic } from "@/lib/types";
 import { IconTrash } from "@/components/icons";
 
@@ -10,21 +9,15 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").repla
 
 export function TaxonomyEditor() {
   const { taxonomy, reloadTaxonomy } = useApp();
-  const { getToken } = useAuth();
   const [active, setActive] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const sb = getSupabase();
 
-  const runApi = async (endpoint: string, method: "POST" | "PUT" | "DELETE", body?: any) => {
-    try {
-      const token = await getToken({ template: "supabase" });
-      await fetchApi(endpoint, { method, body: body ? JSON.stringify(body) : undefined }, token);
-      setMsg(null);
-      await reloadTaxonomy();
-      return true;
-    } catch (error: any) {
-      setMsg(error.message);
-      return false;
-    }
+  const run = async (p: PromiseLike<{ error: { message: string } | null }>) => {
+    const { error } = await p;
+    setMsg(error ? error.message : null);
+    if (!error) await reloadTaxonomy();
+    return !error;
   };
 
   const subject = taxonomy.subjects.find((s) => s.id === active) ?? taxonomy.subjects[0];
@@ -46,24 +39,24 @@ export function TaxonomyEditor() {
               </li>
             ))}
           </ul>
-          <AddSubject onAdd={(v) => runApi("/admin/taxonomy/subjects", "POST", { ...v, slug: slugify(v.name_en), sort_order: taxonomy.subjects.length + 1 })} />
+          <AddSubject onAdd={(v) => run(sb.from("subjects").insert({ ...v, slug: slugify(v.name_en), sort_order: taxonomy.subjects.length + 1 }))} />
         </section>
 
         {/* Selected subject & topics */}
         {subject && (
           <section className="card p-4">
             <SubjectEditor key={subject.id} s={subject}
-              onSave={(v) => runApi(`/admin/taxonomy/subjects/${subject.id}`, "PUT", v)}
-              onDelete={async () => { if (confirm(`Delete subject “${subject.name_en}”? Only possible if it has no questions.`)) { if (await runApi(`/admin/taxonomy/subjects/${subject.id}`, "DELETE")) setActive(null); } }} />
+              onSave={(v) => run(sb.from("subjects").update(v).eq("id", subject.id))}
+              onDelete={async () => { if (confirm(`Delete subject “${subject.name_en}”? Only possible if it has no questions.`)) { if (await run(sb.from("subjects").delete().eq("id", subject.id))) setActive(null); } }} />
             <h3 className="mb-2 mt-6 font-bold text-maroon">Topics</h3>
             <ul className="space-y-2">
               {taxonomy.topics.filter((t) => t.subject_id === subject.id).map((t) => (
                 <TopicRow key={t.id} t={t}
-                  onSave={(v) => runApi(`/admin/taxonomy/topics/${t.id}`, "PUT", v)}
-                  onDelete={() => confirm(`Delete topic “${t.name_en}”? Its questions keep their subject but lose the topic.`) && runApi(`/admin/taxonomy/topics/${t.id}`, "DELETE")} />
+                  onSave={(v) => run(sb.from("topics").update(v).eq("id", t.id))}
+                  onDelete={() => confirm(`Delete topic “${t.name_en}”? Its questions keep their subject but lose the topic.`) && run(sb.from("topics").delete().eq("id", t.id))} />
               ))}
             </ul>
-            <AddTopic onAdd={(v) => runApi("/admin/taxonomy/topics", "POST", { ...v, subject_id: subject.id, slug: slugify(v.name_en), sort_order: 999 })} />
+            <AddTopic onAdd={(v) => run(sb.from("topics").insert({ ...v, subject_id: subject.id, slug: slugify(v.name_en), sort_order: 999 }))} />
           </section>
         )}
       </div>
@@ -76,8 +69,8 @@ export function TaxonomyEditor() {
           <table className="w-full min-w-[720px] text-sm">
             <thead className="text-left text-xs uppercase text-stone-500"><tr><th className="py-2">Short</th><th>Name (English)</th><th>Name (Hindi)</th><th>Year</th><th>Category</th><th>Order</th><th>Active</th><th></th></tr></thead>
             <tbody>
-              {taxonomy.exams.map((e) => <ExamRow key={e.id} e={e} onSave={(v) => runApi(`/admin/taxonomy/exams/${e.id}`, "PUT", v)} onDelete={() => confirm(`Delete “${e.name_en}”? Questions keep their year.`) && runApi(`/admin/taxonomy/exams/${e.id}`, "DELETE")} />)}
-              <ExamRow e={null} onSave={(v) => runApi("/admin/taxonomy/exams", "POST", v)} />
+              {taxonomy.exams.map((e) => <ExamRow key={e.id} e={e} onSave={(v) => run(sb.from("exams").update(v).eq("id", e.id))} onDelete={() => confirm(`Delete “${e.name_en}”? Questions keep their year.`) && run(sb.from("exams").delete().eq("id", e.id))} />)}
+              <ExamRow e={null} onSave={(v) => run(sb.from("exams").insert(v))} />
             </tbody>
           </table>
         </div>

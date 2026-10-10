@@ -4,8 +4,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/components/providers";
 import { RichEditor } from "@/components/RichEditor";
 import { QuestionBody, SolutionBox } from "@/components/QuestionBody";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Difficulty, OptionKey, Question, QuestionOption } from "@/lib/types";
 
 const KEYS: OptionKey[] = ["A", "B", "C", "D", "E"];
@@ -25,7 +24,6 @@ const EMPTY: Draft = {
 export function QuestionForm({ id }: { id?: string }) {
   const { taxonomy, setLang, lang } = useApp();
   const router = useRouter();
-  const { getToken } = useAuth();
   const [d, setD] = useState<Draft | null>(id ? null : EMPTY);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -33,15 +31,14 @@ export function QuestionForm({ id }: { id?: string }) {
 
   useEffect(() => {
     if (!id) return;
-    getToken({ template: "supabase" }).then((token) => {
-      fetchApi(`/admin/questions/${id}`, {}, token).then(({ question }) => {
+    getSupabase().from("questions").select("*").eq("id", id).single().then(({ data, error }) => {
+      if (error) setMsg({ ok: false, text: error.message });
+      else {
         if (new URLSearchParams(window.location.search).get("saved")) setMsg({ ok: true, text: "Saved ✓" });
-        setD({ ...(question as Question), question_hi: question.question_hi ?? "", solution_en: question.solution_en ?? "", solution_hi: question.solution_hi ?? "", theme: question.theme ?? "" });
-      }).catch((error) => {
-        setMsg({ ok: false, text: error.message });
-      });
+        setD({ ...(data as Question), question_hi: data.question_hi ?? "", solution_en: data.solution_en ?? "", solution_hi: data.solution_hi ?? "", theme: data.theme ?? "" });
+      }
     });
-  }, [id, getToken]);
+  }, [id]);
 
   useEffect(() => {
     if (d && !d.subject_id && taxonomy.subjects[0]) setD({ ...d, subject_id: taxonomy.subjects[0].id });
@@ -73,31 +70,19 @@ export function QuestionForm({ id }: { id?: string }) {
       solution_en: d.solution_en || null, solution_hi: d.solution_hi || null, is_dropped: d.is_dropped,
       is_high_priority: d.is_high_priority, theme: d.theme?.trim().toLowerCase().replace(/\s+/g, "-") || null, source: d.source,
     };
-    try {
-      const token = await getToken({ template: "supabase" });
-      const method = d.id ? "PUT" : "POST";
-      const endpoint = d.id ? `/admin/questions/${d.id}` : "/admin/questions";
-      
-      await fetchApi(endpoint, {
-        method,
-        body: JSON.stringify(payload)
-      }, token);
-      
-      setSaving(false);
-      setMsg({ ok: true, text: "Saved ✓" });
-      
-      // We don't get the id back from our current endpoint on insert, but we can assume success
-      // If needed, we can update backend to return id, but for now we'll just redirect to list or clear
-      if (andNew) {
-        setD({ ...EMPTY, subject_id: d.subject_id, topic_id: d.topic_id, exam_id: d.exam_id, year: d.year });
-        if (d.id) router.push("/admin/questions/new");
-        window.scrollTo({ top: 0 });
-      } else if (!d.id) {
-        router.push("/admin/questions");
-      }
-    } catch (error: any) {
-      setSaving(false);
-      setMsg({ ok: false, text: error.message });
+    const sb = getSupabase();
+    const res = d.id
+      ? await sb.from("questions").update(payload).eq("id", d.id).select("id").single()
+      : await sb.from("questions").insert(payload).select("id").single();
+    setSaving(false);
+    if (res.error) return setMsg({ ok: false, text: res.error.message });
+    setMsg({ ok: true, text: "Saved ✓" });
+    if (andNew) {
+      setD({ ...EMPTY, subject_id: d.subject_id, topic_id: d.topic_id, exam_id: d.exam_id, year: d.year });
+      if (d.id) router.push("/admin/questions/new");
+      window.scrollTo({ top: 0 });
+    } else if (!d.id) {
+      router.replace(`/admin/questions/${res.data.id}?saved=1`);
     }
   };
 

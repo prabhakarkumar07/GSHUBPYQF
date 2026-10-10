@@ -7,44 +7,43 @@ import { ConfigNotice, Empty, PageHeader, Spinner } from "@/components/ui";
 import { QuestionBody, QuestionMeta, SolutionBox } from "@/components/QuestionBody";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { RichText } from "@/components/RichText";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Question, QuizMode } from "@/lib/types";
 import { fetchQuizIds, startQuiz } from "../practice/startQuiz";
 
 export function Bookmarks() {
   const { t, user, authReady, subjectName, pick, taxonomy, lang } = useApp();
   const router = useRouter();
-  const { getToken } = useAuth();
   const [items, setItems] = useState<Question[] | null>(null);
   const [subject, setSubject] = useState<number | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !user || !isSupabaseConfigured) return;
     (async () => {
-      try {
-        const token = await getToken({ template: "supabase" });
-        const data = await fetchApi("/user/bookmarks", {}, token);
-        setItems(data.questions || []);
-      } catch (err) {
-        console.error("Failed to load bookmarks:", err);
-      }
+      const sb = getSupabase();
+      const { data: bm } = await sb.from("bookmarks").select("question_id, created_at").order("created_at", { ascending: false });
+      const ids = (bm ?? []).map((b) => b.question_id as string);
+      if (!ids.length) { setItems([]); return; }
+      const { data: qs } = await sb.from("questions").select("*, high_priority").in("id", ids);
+      const byId = new Map(((qs as Question[]) ?? []).map((q) => [q.id, q]));
+      setItems(ids.map((id) => byId.get(id)).filter(Boolean) as Question[]);
     })();
-  }, [authReady, user, getToken]);
+  }, [authReady, user]);
 
   const quiz = async (mode: QuizMode) => {
     setStarting(true);
     try {
-      const clerkToken = user ? await getToken({ template: "supabase" }) : null;
-      const ids = await fetchQuizIds({ subjectIds: subject ? [subject] : [], count: 150, source: "bookmarks" }, clerkToken);
+      const ids = await fetchQuizIds({ subjectIds: subject ? [subject] : [], count: 150, source: "bookmarks" });
       if (!ids.length) { setStarting(false); return; }
-      const id = await startQuiz({ questionIds: ids, mode, source: "bookmarks", title: `Bookmarks · ${subject ? subjectName(subject) : "All"}`, config: { subject }, user, clerkToken, settings: taxonomy.settings });
+      const id = await startQuiz({ questionIds: ids, mode, source: "bookmarks", title: `Bookmarks · ${subject ? subjectName(subject) : "All"}`, config: { subject }, user, settings: taxonomy.settings });
       router.push(`/quiz/${id}`);
     } catch { setStarting(false); }
   };
 
+  if (!isSupabaseConfigured) return <div className="container-page py-10"><ConfigNotice /></div>;
   if (!authReady || items === null) return <Spinner label={t("loading")} />;
 
   const subjects = [...new Set(items.map((q) => q.subject_id))];

@@ -1,13 +1,13 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/admin/revenue", label: "Revenue & subscribers" },
   { href: "/admin", label: "Analytics" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/live-exams", label: "Live Exams" },
+  { href: "/admin/users", label: "All users" },
+  { href: "/admin/students", label: "Quiz results" },
   { href: "/admin/questions", label: "Questions" },
+  { href: "/admin/tests", label: "Tests" },
   { href: "/admin/upload", label: "Bulk upload" },
   { href: "/admin/taxonomy", label: "Subjects, topics & exams" },
   { href: "/admin/settings", label: "Marking & settings" },

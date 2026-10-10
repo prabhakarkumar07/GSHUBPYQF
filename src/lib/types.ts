@@ -1,8 +1,4 @@
 export type Lang = "en" | "hi";
-
-/** Minimal user shape shared across the app (provider-agnostic). */
-export interface AppUser { id: string; email?: string; name?: string }
-
 export type OptionKey = "A" | "B" | "C" | "D" | "E";
 export type Difficulty = "easy" | "medium" | "hard";
 export type QuizMode = "practice" | "exam";
@@ -63,7 +59,6 @@ export interface Exam {
   category: "pyq" | "current_affairs" | "test_series" | "other";
   sort_order: number;
   is_active: boolean;
-  is_premium?: boolean;
 }
 
 export interface AppSettings {
@@ -71,12 +66,6 @@ export interface AppSettings {
   negative_marks: number;
   seconds_per_question: number;
   min_stats_attempts: number;
-  monthly_price?: number;
-  six_month_price?: number;
-  till_prelims_price?: number;
-  prelims_date?: string;
-  free_questions_per_day?: number;
-  free_mocks_per_week?: number;
 }
 
 export interface ResponseEntry {

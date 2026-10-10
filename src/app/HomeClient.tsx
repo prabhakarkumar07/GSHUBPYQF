@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useApp } from "@/components/providers";
+import { CoursesPromo } from "@/components/CoursesPromo";
+import { TestSection } from "@/components/tests/TestSection";
 import { IconBookmark, IconChart, IconGrid, IconNotebook, IconPlay, IconGlobe } from "@/components/icons";
 
 export function HomeClient({ count }: { count: number | null }) {
@@ -45,6 +47,12 @@ export function HomeClient({ count }: { count: number | null }) {
           </div>
         </div>
       </section>
+
+      {/* Tests */}
+      <TestSection category="pyq_full" />
+      <TestSection category="monthly" tinted />
+
+      <CoursesPromo />
 
       {/* Features */}
       <section className="container-page py-14">

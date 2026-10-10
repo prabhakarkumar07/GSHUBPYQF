@@ -7,8 +7,8 @@ import { ConfigNotice, Empty, PageHeader, Spinner, Stat } from "@/components/ui"
 import { QuestionBody, QuestionMeta, SolutionBox } from "@/components/QuestionBody";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { RichText } from "@/components/RichText";
-import { fetchApi } from "@/lib/api-client";
-import { useAuth } from "@clerk/nextjs";
+import { getSupabase } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { OptionKey, Question, QuizMode } from "@/lib/types";
 import { fetchQuizIds, startQuiz } from "../practice/startQuiz";
 import { IconTrash } from "@/components/icons";
@@ -16,10 +16,8 @@ import { IconTrash } from "@/components/icons";
 interface MistakeRow { question_id: string; last_selected: OptionKey | null; times_missed: number; last_missed_at: string; question?: Question }
 
 export function Notebook() {
-  const { t, user, authReady, subjectName, topicName, pick, taxonomy, lang, profile, showPaywall } = useApp();
-  const isFree = profile?.subscription_tier !== "premium";
+  const { t, user, authReady, subjectName, topicName, pick, taxonomy, lang } = useApp();
   const router = useRouter();
-  const { getToken } = useAuth();
   const [rows, setRows] = useState<MistakeRow[] | null>(null);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [subject, setSubject] = useState<number | null>(null);
@@ -29,26 +27,24 @@ export function Notebook() {
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !user || !isSupabaseConfigured) return;
     (async () => {
-      try {
-        const token = await getToken({ template: "supabase" });
-        const data = await fetchApi("/user/notebook", {}, token);
-        
-        const qs = data.questions || [];
-        const mk = data.entries || [];
-        const bmData = await fetchApi("/user/bookmarks", {}, token); // Just to get bookmarked ids
-        
+      const sb = getSupabase();
+      const { data: m } = await sb.from("mistakes").select("question_id, last_selected, times_missed, last_missed_at").order("last_missed_at", { ascending: false });
+      const list = (m as MistakeRow[]) ?? [];
+      const ids = list.map((r) => r.question_id);
+      if (ids.length) {
+        const [{ data: qs }, { data: bm }] = await Promise.all([
+          sb.from("questions").select("*, high_priority").in("id", ids),
+          sb.from("bookmarks").select("question_id").in("question_id", ids),
+        ]);
         const byId = new Map(((qs as Question[]) ?? []).map((q) => [q.id, q]));
-        mk.forEach((r: any) => { r.question = byId.get(r.question_id); });
-        
-        setBookmarks(new Set((bmData.questions || []).map((b: any) => b.id)));
-        setRows(mk.filter((r: any) => r.question));
-      } catch (err) {
-        console.error("Failed to load notebook:", err);
+        list.forEach((r) => { r.question = byId.get(r.question_id); });
+        setBookmarks(new Set((bm ?? []).map((b) => b.question_id as string)));
       }
+      setRows(list.filter((r) => r.question));
     })();
-  }, [authReady, user, getToken]);
+  }, [authReady, user]);
 
   const summary = useMemo(() => {
     const bySubject = new Map<number, number>(), byTopic = new Map<number, number>();
@@ -68,26 +64,21 @@ export function Notebook() {
   const smartQuiz = async (mode: QuizMode) => {
     setStarting(true);
     try {
-      const clerkToken = user ? await getToken({ template: "supabase" }) : null;
-      const ids = await fetchQuizIds({ subjectIds: subject ? [subject] : [], topicIds: topic ? [topic] : [], count: 150, source: "mistakes", highPriorityOnly: hpOnly }, clerkToken);
+      const ids = await fetchQuizIds({ subjectIds: subject ? [subject] : [], topicIds: topic ? [topic] : [], count: 150, source: "mistakes", highPriorityOnly: hpOnly });
       if (!ids.length) { setStarting(false); return; }
       const label = topic ? topicName(topic) : subject ? subjectName(subject) : "All";
-      const id = await startQuiz({ questionIds: ids, mode, source: "mistakes", title: `Mistakes Â· ${label}`, config: { subject, topic, hpOnly }, user, clerkToken, settings: taxonomy.settings });
+      const id = await startQuiz({ questionIds: ids, mode, source: "mistakes", title: `Mistakes · ${label}`, config: { subject, topic, hpOnly }, user, settings: taxonomy.settings });
       router.push(`/quiz/${id}`);
     } catch { setStarting(false); }
   };
 
   const remove = async (qid: string) => {
     if (!user) return;
-    try {
-      const token = await getToken({ template: "supabase" });
-      await fetchApi(`/user/notebook/${qid}`, { method: "DELETE" }, token);
-      setRows((r) => (r ?? []).filter((x) => x.question_id !== qid));
-    } catch (e) {
-      console.error(e);
-    }
+    await getSupabase().from("mistakes").delete().eq("user_id", user.id).eq("question_id", qid);
+    setRows((r) => (r ?? []).filter((x) => x.question_id !== qid));
   };
 
+  if (!isSupabaseConfigured) return <div className="container-page py-10"><ConfigNotice /></div>;
   if (!authReady || rows === null) return <Spinner label={t("loading")} />;
 
   const topicsInSubject = [...summary.byTopic.entries()].filter(([tid]) => !subject || taxonomy.topics.find((x) => x.id === tid)?.subject_id === subject);
@@ -128,7 +119,7 @@ export function Notebook() {
                 </div>
               </div>
             )}
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-maroon" checked={hpOnly} onChange={(e) => setHpOnly(e.target.checked)} /> â˜… {t("only_high_priority")}</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-maroon" checked={hpOnly} onChange={(e) => setHpOnly(e.target.checked)} /> ★ {t("only_high_priority")}</label>
           </div>
 
           {/* Smart quiz */}
@@ -138,20 +129,14 @@ export function Notebook() {
               <div className="text-sm text-white/75">{t("smart_quiz_d")} ({filtered.length} {t("questions")})</div>
             </div>
             <div className="flex gap-2">
-              {isFree ? (
-                <button onClick={() => showPaywall("smart")} className="btn-gold">🔒 {lang === "hi" ? "Premium से खोलें" : "Unlock with Premium"}</button>
-              ) : (
-                <>
-                  <button className="btn-gold" disabled={starting || !filtered.length} onClick={() => smartQuiz("practice")}>{t("practice_mode")}</button>
-                  <button className="btn border border-white/30 text-white hover:bg-white/10" disabled={starting || !filtered.length} onClick={() => smartQuiz("exam")}>{t("exam_mode")}</button>
-                </>
-              )}
+              <button className="btn-gold" disabled={starting || !filtered.length} onClick={() => smartQuiz("practice")}>{t("practice_mode")}</button>
+              <button className="btn border border-white/30 text-white hover:bg-white/10" disabled={starting || !filtered.length} onClick={() => smartQuiz("exam")}>{t("exam_mode")}</button>
             </div>
           </div>
 
           {/* List */}
           <ul className="mt-5 space-y-3">
-            {(isFree ? filtered.slice(0, 10) : filtered).map((r) => {
+            {filtered.map((r) => {
               const q = r.question!;
               const isOpen = open === r.question_id;
               return (
@@ -160,14 +145,14 @@ export function Notebook() {
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap gap-1.5">
                         <span className="badge bg-red-100 text-red-800">{t("missed_times", { n: r.times_missed })}</span>
-                        {q.high_priority && <span className="badge bg-gold text-maroon-900">â˜… {t("high_priority")}</span>}
+                        {q.high_priority && <span className="badge bg-gold text-maroon-900">★ {t("high_priority")}</span>}
                         <span className="badge bg-maroon-50 text-maroon">{subjectName(q.subject_id)}</span>
                         {q.topic_id && <span className="badge bg-stone-100 text-stone-600">{topicName(q.topic_id)}</span>}
                       </div>
                       <RichText html={pick(q.question_en, q.question_hi).replace(/<table[\s\S]*<\/table>/, " [table] ")} className="line-clamp-2 text-[15px]" />
-                      <div className="mt-1.5 text-xs text-stone-500">{t("last_missed")}: {new Date(r.last_missed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} Â· {t("your_answer")}: <b className="text-red-700">{r.last_selected ?? "â€”"}</b> Â· {t("correct_answer")}: <b className="text-green-700">{q.correct_option}</b></div>
+                      <div className="mt-1.5 text-xs text-stone-500">{t("last_missed")}: {new Date(r.last_missed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {t("your_answer")}: <b className="text-red-700">{r.last_selected ?? "—"}</b> · {t("correct_answer")}: <b className="text-green-700">{q.correct_option}</b></div>
                     </div>
-                    <span className="shrink-0 rounded-lg bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon">{isOpen ? "âˆ’" : t("revise")}</span>
+                    <span className="shrink-0 rounded-lg bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon">{isOpen ? "−" : t("revise")}</span>
                   </button>
                   {isOpen && (
                     <div className="border-t border-maroon/10 p-4">
@@ -186,16 +171,8 @@ export function Notebook() {
               );
             })}
           </ul>
-          {isFree && filtered.length > 10 && (
-            <button onClick={() => showPaywall("notebook")} className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-gold bg-gold-50 p-4 text-left">
-              <span className="flex items-center gap-2 font-semibold text-maroon">🔒 {lang === "hi" ? (filtered.length - 10) + " और गलतियाँ छिपी हैं" : (filtered.length - 10) + " more mistakes are hidden"}</span>
-              <span className="btn-gold !py-1.5 text-xs">⭐ Premium</span>
-            </button>
-          )}
         </>
       )}
     </div>
   );
 }
-
-

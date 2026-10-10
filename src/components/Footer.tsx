@@ -13,7 +13,7 @@ export const CONTACT = {
 };
 
 export function Footer() {
-  const { t } = useApp();
+  const { t, lang } = useApp();
   const path = usePathname();
   if (path.startsWith("/quiz/")) return null;
   return (
@@ -21,7 +21,7 @@ export function Footer() {
       <div className="h-1 bg-gradient-to-r from-gold-700 via-gold to-gold-700" />
       <div className="container-page grid gap-8 py-10 sm:grid-cols-3">
         <div>
-          <Logo light />
+          <Logo light className="h-12 w-auto" />
           <p className="mt-3 text-sm text-white/70">{t("footer_rights")} — BPSC &amp; UPSC coaching. {t("free_note")}</p>
         </div>
         <ul className="space-y-2.5 text-sm">
@@ -37,6 +37,7 @@ export function Footer() {
           <li><Link href="/bookmarks" className="hover:text-gold-300">{t("nav_bookmarks")}</Link></li>
           <li><Link href="/dashboard" className="hover:text-gold-300">{t("nav_dashboard")}</Link></li>
           <li><Link href="/about" className="hover:text-gold-300">{t("nav_about")}</Link></li>
+          <li><a href="https://gshubsite.com/new-courses" target="_blank" rel="noopener" className="font-semibold text-gold hover:text-gold-300">{lang === "hi" ? "पेड कोर्स ↗" : "Paid courses ↗"}</a></li>
         </ul>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs text-white/50">© {new Date().getFullYear()} GS Hub Civil Services Classes · Trust the Process</div>
