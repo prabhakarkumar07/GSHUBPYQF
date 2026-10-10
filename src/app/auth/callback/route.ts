@@ -1,18 +1,10 @@
+// Clerk handles OAuth callbacks automatically via its own middleware.
+// This route is kept as a simple redirect fallback for any old links.
 import { NextResponse, type NextRequest } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
 
-// OAuth (Google) and email-confirmation links land here.
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   const url = new URL(request.url);
-  const code = url.searchParams.get("code");
-  const nextParam = url.searchParams.get("next") ?? "/dashboard";
-  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
-  if (code) {
-    const sb = await getServerSupabase();
-    if (sb) {
-      const { error } = await sb.auth.exchangeCodeForSession(code);
-      if (!error) return NextResponse.redirect(new URL(next, url.origin));
-    }
-  }
-  return NextResponse.redirect(new URL("/login?error=auth", url.origin));
+  const next = url.searchParams.get("next") ?? "/dashboard";
+  const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  return NextResponse.redirect(new URL(safe, url.origin));
 }
