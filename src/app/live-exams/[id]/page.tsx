@@ -25,7 +25,7 @@ export default function LiveExamPlayer() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const res = await fetchApi(`/live-exams/${id}/start`, {}, token);
         setData(res);
         
@@ -57,7 +57,7 @@ export default function LiveExamPlayer() {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi(`/live-exams/${id}/submit`, {
         method: "POST",
         body: JSON.stringify({ score: finalScore })
@@ -73,7 +73,7 @@ export default function LiveExamPlayer() {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi(`/live-exams/${id}/submit`, {
         method: "POST",
         body: JSON.stringify({ score: finalScore })

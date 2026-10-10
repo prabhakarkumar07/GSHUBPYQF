@@ -17,7 +17,7 @@ export default function FlashcardsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const res = await fetchApi("/quiz/flashcards", {}, token);
         setCards(res.flashcards || []);
       } catch (err) {
@@ -31,7 +31,7 @@ export default function FlashcardsPage() {
     if (!cards || submitting) return;
     setSubmitting(true);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi("/quiz/flashcards/review", {
         method: "POST",
         body: JSON.stringify({

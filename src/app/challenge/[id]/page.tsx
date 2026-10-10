@@ -23,7 +23,7 @@ export default function ChallengePage() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const res = await fetchApi(`/challenge/${id}`, {}, token);
         setData(res);
       } catch (err) {
@@ -112,7 +112,7 @@ export default function ChallengePage() {
       setFinished(true);
       setSubmitting(true);
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         await fetchApi(`/challenge/${id}/submit`, {
           method: "POST",
           body: JSON.stringify({ score: isCorrect ? score + 1 : score })

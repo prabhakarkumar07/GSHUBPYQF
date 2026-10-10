@@ -40,7 +40,7 @@ export function QuizRunner() {
       let s = loadSession(id);
       if (!s && user) {
         // resume from another device
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const data = await fetchApi(`/quiz/${id}`, {}, token);
         const a = data.attempt as Attempt | null;
         if (a) {
@@ -58,7 +58,7 @@ export function QuizRunner() {
       if (s.status === "submitted") { router.replace(`/result/${id}`); return; }
 
       // Fetch questions from API
-      const token = user ? await getToken({ template: "supabase" }) : null;
+      const token = user ? await getToken() : null;
       // We will assume there's a POST /api/admin/questions endpoint for fetching questions by ids
       // or we can create /api/quiz/questions
       // For now, let's keep getSupabase for questions to save time, or I'll implement it next.
@@ -97,7 +97,7 @@ export function QuizRunner() {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     setSyncState("saving");
     syncTimer.current = setTimeout(async () => {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi("/quiz/sync", {
         method: "POST",
         body: JSON.stringify({ id: s.id, responses: s.responses, currentIndex: s.currentIndex })
@@ -133,7 +133,7 @@ export function QuizRunner() {
     setSubmitting(true);
     try {
       if (s.synced && user) {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const responses: Record<string, { selected: OptionKey }> = {};
         for (const [qid, r] of Object.entries(s.responses)) if (r.selected) responses[qid] = { selected: r.selected };
         await fetchApi("/quiz/submit", {
@@ -176,7 +176,7 @@ export function QuizRunner() {
     update((s) => ({ ...s, responses: { ...s.responses, [q.id]: { ...s.responses[q.id], selected: key, locked: true } } }), false);
     
     if (session.synced && user) {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const data = await fetchApi("/quiz/record-practice", {
         method: "POST",
         body: JSON.stringify({ attemptId: session.id, questionId: q.id, selected: key })
@@ -184,7 +184,7 @@ export function QuizRunner() {
       if (data) update((s) => ({ ...s, responses: { ...s.responses, [q.id]: { ...s.responses[q.id], effect: data.effect ?? null } } }), false);
     }
     
-    const token = user ? await getToken({ template: "supabase" }) : null;
+    const token = user ? await getToken() : null;
     const { stats: st } = await fetchApi("/quiz/stats", {
       method: "POST",
       body: JSON.stringify({ ids: [q.id] })

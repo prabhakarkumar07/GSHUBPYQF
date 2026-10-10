@@ -47,7 +47,7 @@ export function ResultView() {
 
       try {
         if (user) {
-          const token = await getToken({ template: "supabase" });
+          const token = await getToken();
           const data = await fetchApi(`/quiz/${id}/result`, {}, token);
           const attempt = data.attempt;
           

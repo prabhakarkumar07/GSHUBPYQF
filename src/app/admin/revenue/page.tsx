@@ -23,7 +23,7 @@ export default function AdminRevenuePage() {
 
   const loadStats = async () => {
     try {
-      const token = await getToken({ template: "supabase" }) as string;
+      const token = await getToken() as string;
       const data = await fetchApi("/admin/users", {}, token);
       const users = data.users || [];
       setTotalUsers(users.length);
@@ -42,7 +42,7 @@ export default function AdminRevenuePage() {
 
   const handleSaveSettings = async () => {
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi("/admin/settings", { 
         method: "PUT",
         body: JSON.stringify({

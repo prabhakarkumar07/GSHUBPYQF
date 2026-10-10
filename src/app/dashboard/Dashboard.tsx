@@ -27,7 +27,7 @@ export function Dashboard() {
     if (!authReady || !user) return;
     (async () => {
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const [dashRes, statRes, badgeRes, flashcardRes] = await Promise.all([
           fetchApi("/user/dashboard", {}, token),
           fetchApi("/user/analytics", {}, token),
@@ -120,7 +120,7 @@ export function Dashboard() {
           <button 
             onClick={async () => {
               try {
-                const token = await getToken({ template: "supabase" });
+                const token = await getToken();
                 const res = await fetchApi("/challenge/create", { method: "POST", body: "{}" }, token);
                 window.location.href = `/challenge/${res.challengeId}`;
               } catch (e) {

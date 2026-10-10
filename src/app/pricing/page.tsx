@@ -44,7 +44,7 @@ export default function PricingPage() {
       const amount = prices[selectedPlan] * 100; // Razorpay expects paise
       const planName = planNames[selectedPlan];
       
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const orderData = await fetchApi("/razorpay/create-order", { 
         method: "POST", 
         body: JSON.stringify({ amount, plan_name: planName })

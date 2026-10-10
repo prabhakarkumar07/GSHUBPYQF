@@ -14,7 +14,7 @@ export default function LiveExamsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         const res = await fetchApi("/live-exams", {}, token);
         setExams(res.exams || []);
       } catch (err) {
@@ -28,7 +28,7 @@ export default function LiveExamsPage() {
     if (submitting) return;
     setSubmitting(id);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi(`/live-exams/${id}/register`, { method: "POST" }, token);
       
       // Update local state

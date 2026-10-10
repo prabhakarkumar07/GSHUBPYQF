@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
@@ -24,7 +24,7 @@ export default function LiveExamsAdminPage() {
 
   const loadExams = async () => {
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const data = await fetchApi("/admin/live-exams", {}, token);
       setExams(data.exams || []);
     } catch (e) {
@@ -37,7 +37,7 @@ export default function LiveExamsAdminPage() {
   const handleCreate = async (e: any) => {
     e.preventDefault();
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const qIds = questionIds.split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id));
       
       await fetchApi("/admin/live-exams", {
@@ -64,7 +64,7 @@ export default function LiveExamsAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure?")) return;
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       await fetchApi(`/admin/live-exams/${id}`, { method: "DELETE" }, token);
       loadExams();
     } catch (e) {
