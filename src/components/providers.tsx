@@ -46,11 +46,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [paywall, showPaywall] = useState<string | null>(null);
   const [taxonomy, setTaxonomy] = useState<Taxonomy>({ subjects: [], topics: [], exams: [], settings: DEFAULT_SETTINGS, loaded: false });
 
-  // Clerk auth state
   const { user: clerkUser, isLoaded } = useUser();
   const { getToken } = useAuth();
 
-  // Expose a simplified user object so the rest of the app doesn't need to know about Clerk
   const user = clerkUser
     ? {
         id: clerkUser.id,
@@ -65,7 +63,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem("gshub_lang");
       if (saved === "en" || saved === "hi") setLangState(saved);
-    } catch { /* ignore */ }
+    } catch {
+      // Ignore storage access errors.
+    }
   }, []);
 
   useEffect(() => {
@@ -74,16 +74,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem("gshub_lang", l); } catch { /* ignore */ }
+    try {
+      localStorage.setItem("gshub_lang", l);
+    } catch {
+      // Ignore storage access errors.
+    }
   }, []);
 
-  // Load profile from new API backend whenever the Clerk user changes
   useEffect(() => {
     if (!clerkUser) {
       setProfile(null);
       return;
     }
-    
+
     async function loadOrCreateProfile() {
       try {
         const token = await getToken({ template: "supabase" });
@@ -93,9 +96,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             user: {
               id: clerkUser!.id,
               name: clerkUser!.fullName,
-              email: clerkUser!.primaryEmailAddress?.emailAddress
-            }
-          })
+              email: clerkUser!.primaryEmailAddress?.emailAddress,
+            },
+          }),
         }, token);
         setProfile(loadedProfile as Profile);
       } catch (err) {
@@ -114,7 +117,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         topics: data.topics ?? [],
         exams: data.exams ?? [],
         settings: data.settings
-          ? { positive_marks: Number(data.settings.positive_marks), negative_marks: Number(data.settings.negative_marks), seconds_per_question: data.settings.seconds_per_question, min_stats_attempts: data.settings.min_stats_attempts }
+          ? {
+              positive_marks: Number(data.settings.positive_marks),
+              negative_marks: Number(data.settings.negative_marks),
+              seconds_per_question: data.settings.seconds_per_question,
+              min_stats_attempts: data.settings.min_stats_attempts,
+            }
           : DEFAULT_SETTINGS,
         loaded: true,
       });
@@ -130,11 +138,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       (lang === "hi" ? hi || en : en || hi) ?? "";
     const subjectName = (id: number | null | undefined) => {
       const s = taxonomy.subjects.find((x) => x.id === id);
-      return s ? pick(s.name_en, s.name_hi) : "â€”";
+      return s ? pick(s.name_en, s.name_hi) : "—";
     };
     const topicName = (id: number | null | undefined) => {
       const s = taxonomy.topics.find((x) => x.id === id);
-      return s ? pick(s.name_en, s.name_hi) : "â€”";
+      return s ? pick(s.name_en, s.name_hi) : "—";
     };
     const examName = (id: number | null | undefined) => {
       const s = taxonomy.exams.find((x) => x.id === id);
@@ -156,4 +164,3 @@ export function useApp(): AppCtx {
   if (!ctx) throw new Error("useApp must be used inside <AppProvider>");
   return ctx;
 }
-

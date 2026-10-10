@@ -98,23 +98,23 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="container-page py-16">
+    <div className="container-page py-10">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
-      <div className="mx-auto max-w-4xl text-center">
-        <h1 className="h-display text-4xl text-maroon sm:text-5xl">Unlock Premium BPSC Prep</h1>
-        <p className="mt-4 text-lg text-stone-600">
+      <div className="mx-auto max-w-3xl text-center">
+        <h1 className="h-display text-3xl text-maroon sm:text-4xl">Unlock Premium BPSC Prep</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-base text-stone-600">
           Get access to high-yield current affairs, exclusive test series, and advanced analytics.
         </p>
 
-        <div className="mt-12 grid gap-8 md:grid-cols-2 md:items-start">
+        <div className="mt-8 grid gap-5 md:grid-cols-2 md:items-start">
           {/* Free Tier */}
-          <div className="card flex flex-col items-center p-8 border-2 border-transparent hover:border-maroon/10 transition-colors h-full">
-            <h2 className="text-2xl font-bold text-stone-800">Free Tier</h2>
-            <div className="mt-4 text-4xl font-extrabold text-stone-900">₹0</div>
-            <p className="mt-2 text-sm text-stone-500">Forever Free</p>
+          <div className="card flex h-full flex-col items-center border-2 border-transparent p-5 transition-colors hover:border-maroon/10">
+            <h2 className="text-xl font-bold text-stone-800">Free Tier</h2>
+            <div className="mt-3 text-3xl font-extrabold text-stone-900">₹0</div>
+            <p className="mt-1 text-xs text-stone-500">Forever Free</p>
             
-            <ul className="mt-8 space-y-4 text-left w-full text-stone-600">
+            <ul className="mt-5 w-full space-y-2.5 text-left text-sm text-stone-600">
               <li className="flex items-center gap-3"><span className="text-green-600">✓</span> Access to all BPSC PYQs</li>
               <li className="flex items-center gap-3"><span className="text-green-600">✓</span> Basic Subject/Topic filtering</li>
               <li className="flex items-center gap-3"><span className="text-green-600">✓</span> {settings.free_questions_per_day || 20} Questions per day</li>
@@ -122,20 +122,20 @@ export default function PricingPage() {
               <li className="flex items-center gap-3"><span className="text-green-600">✓</span> Mistake Notebook (Basic)</li>
             </ul>
 
-            <button className="btn-outline mt-auto pt-8 w-full cursor-default opacity-50" disabled>
+            <button className="btn-outline mt-auto w-full cursor-default opacity-50" disabled>
               {user ? "Current Plan" : "Included"}
             </button>
           </div>
 
           {/* Premium Tier */}
-          <div className="card flex flex-col items-center p-8 border-2 border-gold bg-gold-50/30 relative shadow-xl transform md:scale-105 h-full">
+          <div className="card relative flex h-full flex-col items-center border-2 border-gold bg-gold-50/30 p-5 shadow-xl md:scale-[1.02]">
             <div className="absolute top-0 right-0 bg-gold text-maroon-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl uppercase tracking-wider">
               Recommended
             </div>
-            <h2 className="text-2xl font-bold text-maroon">Pro Plan</h2>
+            <h2 className="text-xl font-bold text-maroon">Pro Plan</h2>
             
-            <div className="mt-6 flex flex-col w-full gap-2 text-left">
-              <label className={`border rounded-lg p-3 cursor-pointer flex justify-between items-center transition-colors ${selectedPlan === "till_prelims" ? "bg-white border-maroon ring-1 ring-maroon" : "bg-white/50 border-stone-200 hover:border-maroon/50"}`}>
+            <div className="mt-5 flex w-full flex-col gap-2 text-left">
+              <label className={`flex cursor-pointer items-center justify-between rounded-lg border p-2.5 transition-colors ${selectedPlan === "till_prelims" ? "bg-white border-maroon ring-1 ring-maroon" : "bg-white/50 border-stone-200 hover:border-maroon/50"}`}>
                 <div className="flex items-center gap-3">
                   <input type="radio" name="plan" checked={selectedPlan === "till_prelims"} onChange={() => setSelectedPlan("till_prelims")} className="accent-maroon" />
                   <div>
@@ -143,27 +143,27 @@ export default function PricingPage() {
                     <div className="text-xs text-stone-500">Valid till {settings.prelims_date || "2027-03-15"}</div>
                   </div>
                 </div>
-                <div className="font-extrabold text-lg text-maroon-900">₹{prices.till_prelims}</div>
+                <div className="text-base font-extrabold text-maroon-900">₹{prices.till_prelims}</div>
               </label>
 
-              <label className={`border rounded-lg p-3 cursor-pointer flex justify-between items-center transition-colors ${selectedPlan === "six_months" ? "bg-white border-maroon ring-1 ring-maroon" : "bg-white/50 border-stone-200 hover:border-maroon/50"}`}>
+              <label className={`flex cursor-pointer items-center justify-between rounded-lg border p-2.5 transition-colors ${selectedPlan === "six_months" ? "bg-white border-maroon ring-1 ring-maroon" : "bg-white/50 border-stone-200 hover:border-maroon/50"}`}>
                 <div className="flex items-center gap-3">
                   <input type="radio" name="plan" checked={selectedPlan === "six_months"} onChange={() => setSelectedPlan("six_months")} className="accent-maroon" />
                   <div className="font-bold text-maroon">6 Months</div>
                 </div>
-                <div className="font-extrabold text-lg text-maroon-900">₹{prices.six_months}</div>
+                <div className="text-base font-extrabold text-maroon-900">₹{prices.six_months}</div>
               </label>
 
-              <label className={`border rounded-lg p-3 cursor-pointer flex justify-between items-center transition-colors ${selectedPlan === "monthly" ? "bg-white border-maroon ring-1 ring-maroon" : "bg-white/50 border-stone-200 hover:border-maroon/50"}`}>
+              <label className={`flex cursor-pointer items-center justify-between rounded-lg border p-2.5 transition-colors ${selectedPlan === "monthly" ? "bg-white border-maroon ring-1 ring-maroon" : "bg-white/50 border-stone-200 hover:border-maroon/50"}`}>
                 <div className="flex items-center gap-3">
                   <input type="radio" name="plan" checked={selectedPlan === "monthly"} onChange={() => setSelectedPlan("monthly")} className="accent-maroon" />
                   <div className="font-bold text-maroon">Monthly</div>
                 </div>
-                <div className="font-extrabold text-lg text-maroon-900">₹{prices.monthly}</div>
+                <div className="text-base font-extrabold text-maroon-900">₹{prices.monthly}</div>
               </label>
             </div>
             
-            <ul className="mt-8 space-y-4 text-left w-full text-maroon-900">
+            <ul className="mt-5 w-full space-y-2.5 text-left text-sm text-maroon-900">
               <li className="flex items-center gap-3"><span className="text-gold">★</span> <b>Unlimited questions</b> (No daily limit)</li>
               <li className="flex items-center gap-3"><span className="text-gold">★</span> <b>Unlimited Full Mocks</b></li>
               <li className="flex items-center gap-3"><span className="text-gold">★</span> <b>Topic-level Heatmaps</b></li>
@@ -172,7 +172,7 @@ export default function PricingPage() {
             </ul>
 
             <button 
-              className="btn-primary mt-8 w-full shadow-lg hover:shadow-xl transition-all"
+              className="btn-primary mt-6 w-full shadow-lg transition-all hover:shadow-xl"
               onClick={handleUpgrade}
               disabled={loading}
             >
