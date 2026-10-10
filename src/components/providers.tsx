@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
@@ -142,9 +142,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lang, setLang,
       t: (key, vars) => translate(lang, key, vars),
       pick, user, profile, isAdmin: profile?.role === "admin", authReady,
-      taxonomy, reloadTaxonomy, subjectName, topicName, examName,
+      taxonomy, reloadTaxonomy, subjectName, topicName, examName, paywall, showPaywall,
     };
-  }, [lang, setLang, user, profile, authReady, taxonomy, reloadTaxonomy]);
+  }, [lang, setLang, user, profile, authReady, taxonomy, reloadTaxonomy, paywall, showPaywall]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
