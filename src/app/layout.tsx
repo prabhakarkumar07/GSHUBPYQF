@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 import { AppProvider } from "@/components/providers";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif:wght@700&family=Noto+Serif+Devanagari:wght@700&display=swap"
         />
       </head>
-      <body className="min-h-screen font-sans antialiased">
+      <body className="min-h-screen font-sans antialiased">`n        <ClerkProvider>
         <AppProvider>
           <Header />
           <main className="min-h-[60vh]">{children}</main>
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <FeedbackButton />
           <ProfileGate />
         </AppProvider>
-      </body>
+        </ClerkProvider>`n      </body>
     </html>
   );
 }
