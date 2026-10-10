@@ -28,16 +28,16 @@ export default function AdminRevenuePage() {
   };
 
   const stat = (label: string, value: string | number, hint: string = "", accent: boolean = false) => (
-    <div className={\ounded-2xl p-4 \\}>
-      <div className={\	ext-xs font-medium uppercase tracking-wide \\}>{label}</div>
-      <div className={\mt-1 font-display text-2xl font-bold \\}>{value}</div>
-      {hint && <div className={\mt-0.5 text-xs \\}>{hint}</div>}
+    <div className={`rounded-2xl p-4 ${accent ? "bg-maroon text-white" : "card"}`}>
+      <div className={`text-xs font-medium uppercase tracking-wide ${accent ? "text-gold-300" : "text-stone-500"}`}>{label}</div>
+      <div className={`mt-1 font-display text-2xl font-bold ${accent ? "text-white" : "text-maroon"}`}>{value}</div>
+      {hint && <div className={`mt-0.5 text-xs ${accent ? "text-white/70" : "text-stone-500"}`}>{hint}</div>}
     </div>
   );
 
   const bar = (p: number, cls: string) => (
     <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100">
-      <div className={\h-full rounded-full \\} style={{ width: \\%\ }}></div>
+      <div className={`h-full rounded-full ${cls}`} style={{ width: `${p}%` }}></div>
     </div>
   );
 
@@ -68,8 +68,8 @@ export default function AdminRevenuePage() {
       
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stat("Revenue — October", "₹27,840", "+29% vs September", true)}
-        {stat("Active Premium", premiumUsers, \out of \ total users\)}
-        {stat("Free → Premium", \\%\, "conversion rate")}
+        {stat("Active Premium", premiumUsers, `out of ${totalUsers} total users`)}
+        {stat("Free → Premium", `${convRate}%`, "conversion rate")}
         {stat("Classroom codes used", "86", "of 120 issued")}
       </div>
       
@@ -79,9 +79,9 @@ export default function AdminRevenuePage() {
           <div className="flex h-44 items-end gap-3">
             {months.map(([m, v], i) => (
               <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <span className="text-xs font-semibold text-maroon">{v}k</span>
-                <div className="w-full rounded-t-lg bg-gradient-to-t from-maroon to-maroon-600" style={{ height: \\%\ }}></div>
-                <span className="text-xs text-stone-500">{m}</span>
+                <span className="text-xs font-semibold text-maroon">{v as number}k</span>
+                <div className="w-full rounded-t-lg bg-gradient-to-t from-maroon to-maroon-600" style={{ height: `${(100 * Number(v)) / max}%` }}></div>
+                <span className="text-xs text-stone-500">{m as string}</span>
               </div>
             ))}
           </div>
@@ -91,7 +91,7 @@ export default function AdminRevenuePage() {
           {[["Till Prelims · ₹499", 58, "bg-maroon"], ["6 Months · ₹399", 17, "bg-gold"], ["Monthly · ₹99", 25, "bg-stone-400"]].map(([l, p, c], i) => (
             <div key={i} className="mb-3">
               <div className="mb-1 flex justify-between text-sm">
-                <span>{l}</span><b>{p}%</b>
+                <span>{l as string}</span><b>{p as number}%</b>
               </div>
               {bar(Number(p), String(c))}
             </div>
@@ -133,7 +133,7 @@ export default function AdminRevenuePage() {
           <div className="grid grid-cols-2 gap-3 text-sm">
             {[["Monthly price (₹)", 99], ["6-month price (₹)", 399], ["Till-Prelims price (₹)", 499], ["Prelims date", "2027-03-15"], ["Free questions / day", 20], ["Free mocks / week", 1]].map(([l, v], i) => (
               <label key={i}>
-                <span className="label !text-xs">{l}</span>
+                <span className="label !text-xs">{l as string}</span>
                 <input className="input !py-2" defaultValue={String(v)} />
               </label>
             ))}
@@ -146,9 +146,9 @@ export default function AdminRevenuePage() {
             <tbody>
               {[["GSHUB50", "50% off", "41 used"], ["DIWALI30", "30% off", "Expires 5 Nov"], ["Classroom batch codes", "100% off", "86 / 120 used"]].map(([c, d, u], i) => (
                 <tr key={i} className="border-t border-maroon/5">
-                  <td className="py-2.5 font-mono font-semibold text-maroon">{c}</td>
-                  <td>{d}</td>
-                  <td className="text-right text-stone-500">{u}</td>
+                  <td className="py-2.5 font-mono font-semibold text-maroon">{c as string}</td>
+                  <td>{d as string}</td>
+                  <td className="text-right text-stone-500">{u as string}</td>
                 </tr>
               ))}
             </tbody>

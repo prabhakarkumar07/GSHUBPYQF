@@ -27,7 +27,8 @@ interface Loaded {
 export function ResultView() {
   const { id } = useParams<{ id: string }>();
   const { getToken } = useAuth();
-  const { t, user, authReady, subjectName, topicName, pick, lang, taxonomy } = useApp();
+  const { t, user, authReady, subjectName, topicName, pick, lang, taxonomy, profile, showPaywall } = useApp();
+  const isFree = profile?.subscription_tier !== "premium";
   const [data, setData] = useState<Loaded | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
   const [filter, setFilter] = useState<"all" | "wrong" | "correct" | "skipped">("all");
@@ -155,8 +156,20 @@ export function ResultView() {
 
       {/* Impact */}
       <section className="mt-8">
-        <h2 className="h-display text-xl">{t("impact_title")}</h2>
-        {impact.missed.length === 0 && impact.tough.length === 0 ? (
+        <h2 className="h-display text-xl">{t("impact_title")} {isFree && <button onClick={() => showPaywall("compare")} className="inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-xs font-bold text-maroon-900">🔒Premium</button>}</h2>
+        {isFree ? (
+          <div className="relative mt-3">
+            <div className="pointer-events-none grid select-none gap-3 blur-[6px] md:grid-cols-2" aria-hidden="true">
+              <ImpactCard tone="red" pct={64} text={`64% ${t("impact_missed")}`} html={lang === "hi" ? "गुप्त काल में नालंदा महाविहार की स्थापना किसने की?" : "Who founded the Nalanda Mahavihara?"} onClick={() => {}} />
+              <ImpactCard tone="red" pct={52} text={`52% ${t("impact_missed")}`} html={lang === "hi" ? "किस अनुच्छेद में अस्पृश्यता का अंत है?" : "Which article abolishes untouchability?"} onClick={() => {}} />
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/60 p-4 text-center">
+              <div className="font-display text-lg font-bold text-maroon">{lang === "hi" ? "कौन-से प्रश्न सबने सही किए पर आपसे छूट गए?" : "Which questions did most students get right — but you missed?"}</div>
+              <p className="max-w-md text-sm text-stone-600">{lang === "hi" ? "हज़ारों छात्रों से तुलना देखें और असली कमज़ोरी पकड़ें।" : "Compare with every student on the portal and find the marks you're really losing."}</p>
+              <button onClick={() => showPaywall("compare")} className="btn-gold">⭐ {lang === "hi" ? "Premium से देखें" : "Unlock with Premium"}</button>
+            </div>
+          </div>
+        ) : impact.missed.length === 0 && impact.tough.length === 0 ? (
           <p className="mt-3 rounded-xl bg-white p-4 text-sm text-stone-500 ring-1 ring-maroon/10">{t("impact_none")}</p>
         ) : (
           <div className="mt-3 grid gap-3 md:grid-cols-2">

@@ -1,14 +1,15 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AppProvider } from "@/components/providers";
 import { Header } from "@/components/Header";
+import { PaywallModal } from "@/components/PaywallModal";
 import { Footer } from "@/components/Footer";
 import { MobileTabs } from "@/components/MobileTabs";
 import { FeedbackButton } from "@/components/FeedbackButton";
 
 export const metadata: Metadata = {
-  title: { default: "GS Hub BPSC PYQ Portal — Free BPSC Prelims Practice", template: "%s · GS Hub BPSC PYQ Portal" },
+  title: { default: "GS Hub BPSC PYQ Portal â€” Free BPSC Prelims Practice", template: "%s Â· GS Hub BPSC PYQ Portal" },
   description: "Solve BPSC Prelims previous year questions topic-wise in Hindi & English, with detailed solutions, a personal Mistake Notebook and accuracy heat map. Free, by GS Hub Civil Services Classes, Patna.",
   applicationName: "GS Hub BPSC PYQ Portal",
 };
@@ -34,7 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Footer />
             <MobileTabs />
             <FeedbackButton />
-          </AppProvider>
+          <PaywallModal />
+        </AppProvider>
         </body>
       </html>
     </ClerkProvider>

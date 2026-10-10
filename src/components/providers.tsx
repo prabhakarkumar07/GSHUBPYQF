@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
@@ -29,6 +29,8 @@ interface AppCtx {
   taxonomy: Taxonomy;
   reloadTaxonomy: () => Promise<void>;
   subjectName: (id: number | null | undefined) => string;
+  paywall: string | null;
+  showPaywall: (type: string | null) => void;
   topicName: (id: number | null | undefined) => string;
   examName: (id: number | null | undefined) => string;
 }
@@ -39,6 +41,7 @@ const Ctx = createContext<AppCtx | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [paywall, showPaywall] = useState<string | null>(null);
   const [taxonomy, setTaxonomy] = useState<Taxonomy>({ subjects: [], topics: [], exams: [], settings: DEFAULT_SETTINGS, loaded: false });
 
   // Clerk auth state
@@ -125,11 +128,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       (lang === "hi" ? hi || en : en || hi) ?? "";
     const subjectName = (id: number | null | undefined) => {
       const s = taxonomy.subjects.find((x) => x.id === id);
-      return s ? pick(s.name_en, s.name_hi) : "—";
+      return s ? pick(s.name_en, s.name_hi) : "â€”";
     };
     const topicName = (id: number | null | undefined) => {
       const s = taxonomy.topics.find((x) => x.id === id);
-      return s ? pick(s.name_en, s.name_hi) : "—";
+      return s ? pick(s.name_en, s.name_hi) : "â€”";
     };
     const examName = (id: number | null | undefined) => {
       const s = taxonomy.exams.find((x) => x.id === id);
@@ -151,3 +154,4 @@ export function useApp(): AppCtx {
   if (!ctx) throw new Error("useApp must be used inside <AppProvider>");
   return ctx;
 }
+

@@ -71,7 +71,7 @@ export function Notebook() {
       const ids = await fetchQuizIds({ subjectIds: subject ? [subject] : [], topicIds: topic ? [topic] : [], count: 150, source: "mistakes", highPriorityOnly: hpOnly }, clerkToken);
       if (!ids.length) { setStarting(false); return; }
       const label = topic ? topicName(topic) : subject ? subjectName(subject) : "All";
-      const id = await startQuiz({ questionIds: ids, mode, source: "mistakes", title: `Mistakes · ${label}`, config: { subject, topic, hpOnly }, user, clerkToken, settings: taxonomy.settings });
+      const id = await startQuiz({ questionIds: ids, mode, source: "mistakes", title: `Mistakes Â· ${label}`, config: { subject, topic, hpOnly }, user, clerkToken, settings: taxonomy.settings });
       router.push(`/quiz/${id}`);
     } catch { setStarting(false); }
   };
@@ -127,7 +127,7 @@ export function Notebook() {
                 </div>
               </div>
             )}
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-maroon" checked={hpOnly} onChange={(e) => setHpOnly(e.target.checked)} /> ★ {t("only_high_priority")}</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-maroon" checked={hpOnly} onChange={(e) => setHpOnly(e.target.checked)} /> â˜… {t("only_high_priority")}</label>
           </div>
 
           {/* Smart quiz */}
@@ -137,14 +137,20 @@ export function Notebook() {
               <div className="text-sm text-white/75">{t("smart_quiz_d")} ({filtered.length} {t("questions")})</div>
             </div>
             <div className="flex gap-2">
-              <button className="btn-gold" disabled={starting || !filtered.length} onClick={() => smartQuiz("practice")}>{t("practice_mode")}</button>
-              <button className="btn border border-white/30 text-white hover:bg-white/10" disabled={starting || !filtered.length} onClick={() => smartQuiz("exam")}>{t("exam_mode")}</button>
+              {isFree ? (
+                <button onClick={() => showPaywall("smart")} className="btn-gold">🔒 {lang === "hi" ? "Premium से खोलें" : "Unlock with Premium"}</button>
+              ) : (
+                <>
+                  <button className="btn-gold" disabled={starting || !filtered.length} onClick={() => smartQuiz("practice")}>{t("practice_mode")}</button>
+                  <button className="btn border border-white/30 text-white hover:bg-white/10" disabled={starting || !filtered.length} onClick={() => smartQuiz("exam")}>{t("exam_mode")}</button>
+                </>
+              )}
             </div>
           </div>
 
           {/* List */}
           <ul className="mt-5 space-y-3">
-            {filtered.map((r) => {
+            {(isFree ? filtered.slice(0, 10) : filtered).map((r) => {
               const q = r.question!;
               const isOpen = open === r.question_id;
               return (
@@ -153,14 +159,14 @@ export function Notebook() {
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap gap-1.5">
                         <span className="badge bg-red-100 text-red-800">{t("missed_times", { n: r.times_missed })}</span>
-                        {q.high_priority && <span className="badge bg-gold text-maroon-900">★ {t("high_priority")}</span>}
+                        {q.high_priority && <span className="badge bg-gold text-maroon-900">â˜… {t("high_priority")}</span>}
                         <span className="badge bg-maroon-50 text-maroon">{subjectName(q.subject_id)}</span>
                         {q.topic_id && <span className="badge bg-stone-100 text-stone-600">{topicName(q.topic_id)}</span>}
                       </div>
                       <RichText html={pick(q.question_en, q.question_hi).replace(/<table[\s\S]*<\/table>/, " [table] ")} className="line-clamp-2 text-[15px]" />
-                      <div className="mt-1.5 text-xs text-stone-500">{t("last_missed")}: {new Date(r.last_missed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {t("your_answer")}: <b className="text-red-700">{r.last_selected ?? "—"}</b> · {t("correct_answer")}: <b className="text-green-700">{q.correct_option}</b></div>
+                      <div className="mt-1.5 text-xs text-stone-500">{t("last_missed")}: {new Date(r.last_missed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} Â· {t("your_answer")}: <b className="text-red-700">{r.last_selected ?? "â€”"}</b> Â· {t("correct_answer")}: <b className="text-green-700">{q.correct_option}</b></div>
                     </div>
-                    <span className="shrink-0 rounded-lg bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon">{isOpen ? "−" : t("revise")}</span>
+                    <span className="shrink-0 rounded-lg bg-maroon-50 px-2.5 py-1 text-xs font-semibold text-maroon">{isOpen ? "âˆ’" : t("revise")}</span>
                   </button>
                   {isOpen && (
                     <div className="border-t border-maroon/10 p-4">
@@ -179,8 +185,16 @@ export function Notebook() {
               );
             })}
           </ul>
+          {isFree && filtered.length > 10 && (
+            <button onClick={() => showPaywall("notebook")} className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-gold bg-gold-50 p-4 text-left">
+              <span className="flex items-center gap-2 font-semibold text-maroon">🔒 {lang === "hi" ? (filtered.length - 10) + " और गलतियाँ छिपी हैं" : (filtered.length - 10) + " more mistakes are hidden"}</span>
+              <span className="btn-gold !py-1.5 text-xs">⭐ Premium</span>
+            </button>
+          )}
         </>
       )}
     </div>
   );
 }
+
+

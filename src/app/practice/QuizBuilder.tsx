@@ -78,6 +78,10 @@ export function QuizBuilder() {
     set(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
 
   const start = async () => {
+    if (isFree) {
+      if (finalCount > 20) { showPaywall("limit"); return; }
+      if (mode === "exam") { showPaywall("exam"); return; }
+    }
     if (!user) {
       router.push("/login?redirect_url=/practice");
       return;
@@ -89,7 +93,7 @@ export function QuizBuilder() {
       const ids = await fetchQuizIds({ subjectIds, topicIds, examIds, count: finalCount, source, highPriorityOnly: hpOnly }, clerkToken);
       if (ids.length === 0) { setError(t("no_questions")); setStarting(false); return; }
       const subjNames = subjectIds.length ? subjectIds.map((id) => subjects.find((s) => s.id === id)?.name_en).filter(Boolean).join(", ") : "All subjects";
-      const prefix = source === "mistakes" ? "Mistakes · " : source === "bookmarks" ? "Bookmarks · " : "";
+      const prefix = source === "mistakes" ? "Mistakes Â· " : source === "bookmarks" ? "Bookmarks Â· " : "";
       const id = await startQuiz({
         questionIds: ids, mode, source,
         title: `${prefix}${subjNames}`.slice(0, 120),
@@ -162,7 +166,7 @@ export function QuizBuilder() {
                   );
                 })}
               </div>
-              <p className="text-xs text-stone-500">{subjectIds.length === 0 ? (lang === "hi" ? "कोई विषय न चुनें तो सभी विषयों से प्रश्न आएँगे।" : "Leave empty to include all subjects.") : ""}</p>
+              <p className="text-xs text-stone-500">{subjectIds.length === 0 ? (lang === "hi" ? "à¤•à¥‹à¤ˆ à¤µà¤¿à¤·à¤¯ à¤¨ à¤šà¥à¤¨à¥‡à¤‚ à¤¤à¥‹ à¤¸à¤­à¥€ à¤µà¤¿à¤·à¤¯à¥‹à¤‚ à¤¸à¥‡ à¤ªà¥à¤°à¤¶à¥à¤¨ à¤†à¤à¤à¤—à¥‡à¥¤" : "Leave empty to include all subjects.") : ""}</p>
             </div>
           )}
 
@@ -192,7 +196,7 @@ export function QuizBuilder() {
                   </div>
                 );
               })}
-              <p className="text-xs text-stone-500">{lang === "hi" ? "कोई टॉपिक न चुनें तो चुने गए विषयों के सभी टॉपिक शामिल होंगे।" : "Leave empty to include every topic of the chosen subjects."}</p>
+              <p className="text-xs text-stone-500">{lang === "hi" ? "à¤•à¥‹à¤ˆ à¤Ÿà¥‰à¤ªà¤¿à¤• à¤¨ à¤šà¥à¤¨à¥‡à¤‚ à¤¤à¥‹ à¤šà¥à¤¨à¥‡ à¤—à¤ à¤µà¤¿à¤·à¤¯à¥‹à¤‚ à¤•à¥‡ à¤¸à¤­à¥€ à¤Ÿà¥‰à¤ªà¤¿à¤• à¤¶à¤¾à¤®à¤¿à¤² à¤¹à¥‹à¤‚à¤—à¥‡à¥¤" : "Leave empty to include every topic of the chosen subjects."}</p>
             </div>
           )}
 
@@ -205,20 +209,20 @@ export function QuizBuilder() {
                   return (
                     <button key={ex.id} onClick={() => {
                         if (isLocked) {
-                          router.push("/pricing");
+                          showPaywall("years");
                           return;
                         }
                         toggle(examIds, ex.id, setExamIds);
-                      }} className={examIds.includes(ex.id) ? "chip-on" : "chip-off"}>
+                      }} className={isLocked ? "chip border-gold/60 bg-gold-50 text-gold-700" : examIds.includes(ex.id) ? "chip-on" : "chip-off"}>
                       {isLocked && <span className="mr-1">🔒</span>}
-                      {ex.short_name}{ex.year ? <span className="opacity-70"> · {ex.year}</span> : null}
+                      {ex.short_name}{ex.year ? <span className="opacity-70"> Â· {ex.year}</span> : null}
                     </button>
                   );
                 })}
               </div>
               <label className="flex items-center gap-2.5 rounded-xl bg-gold-50 p-3 text-sm">
                 <input type="checkbox" className="h-4 w-4 accent-maroon" checked={hpOnly} onChange={(e) => setHpOnly(e.target.checked)} />
-                <span>★ {t("only_high_priority")}</span>
+                <span>â˜… {t("only_high_priority")}</span>
               </label>
             </div>
           )}
@@ -246,11 +250,11 @@ export function QuizBuilder() {
                 <button key={m} onClick={() => setMode(m)} className={`rounded-2xl border p-5 text-left transition ${mode === m ? "border-maroon bg-maroon-50 ring-2 ring-maroon/15" : "border-maroon/10 bg-white hover:border-maroon/30"}`}>
                   <div className="text-lg font-bold text-maroon">{m === "practice" ? t("practice_mode") : t("exam_mode")}</div>
                   <p className="mt-1.5 text-sm text-stone-600">
-                    {m === "practice" ? t("practice_mode_d") : `${t("exam_mode_d")} +${s.positive_marks} / −${s.negative_marks}.`}
+                    {m === "practice" ? t("practice_mode_d") : `${t("exam_mode_d")} +${s.positive_marks} / âˆ’${s.negative_marks}.`}
                   </p>
                   {m === "exam" && (
                     <p className="mt-2 text-xs font-medium text-gold-700">
-                      ⏱ {Math.ceil((Math.min(finalCount, available ?? finalCount) * s.seconds_per_question) / 60)} {t("minutes")}
+                      â± {Math.ceil((Math.min(finalCount, available ?? finalCount) * s.seconds_per_question) / 60)} {t("minutes")}
                     </p>
                   )}
                 </button>
@@ -259,9 +263,9 @@ export function QuizBuilder() {
           )}
 
           <div className="mt-7 flex justify-between gap-3">
-            <button className="btn-outline" onClick={() => setStep((x) => Math.max(0, x - 1))} disabled={step === 0}>← {t("back")}</button>
+            <button className="btn-outline" onClick={() => setStep((x) => Math.max(0, x - 1))} disabled={step === 0}>â† {t("back")}</button>
             {step < 4 ? (
-              <button className="btn-primary" onClick={() => setStep((x) => x + 1)}>{t("next")} →</button>
+              <button className="btn-primary" onClick={() => setStep((x) => x + 1)}>{t("next")} â†’</button>
             ) : (
               <button className="btn-gold px-6" onClick={start} disabled={starting || available === 0 || finalCount < 1 || !isSupabaseConfigured}>{starting ? t("loading") : t("start_quiz")}</button>
             )}
@@ -272,7 +276,7 @@ export function QuizBuilder() {
         {/* Summary */}
         <aside className="card h-fit p-5 lg:sticky lg:top-24">
           <div className="text-xs font-bold uppercase tracking-wider text-stone-500">{t("matching_questions")}</div>
-          <div className="mt-1 font-display text-4xl font-bold text-maroon tabular-nums">{available ?? "—"}</div>
+          <div className="mt-1 font-display text-4xl font-bold text-maroon tabular-nums">{available ?? "â€”"}</div>
           <dl className="mt-4 space-y-2 text-sm">
             <Row k={t("step_subjects")} v={subjectIds.length ? subjectIds.map((id) => { const x = subjects.find((s2) => s2.id === id); return x ? pick(x.name_en, x.name_hi) : ""; }).join(", ") : t("all_subjects")} />
             <Row k={t("step_topics")} v={topicIds.length ? `${topicIds.length}` : t("all_topics")} />
@@ -297,3 +301,5 @@ function Row({ k, v }: { k: string; v: string }) {
     </div>
   );
 }
+
+
