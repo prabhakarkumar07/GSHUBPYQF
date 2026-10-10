@@ -66,6 +66,10 @@ export interface AppSettings {
   negative_marks: number;
   seconds_per_question: number;
   min_stats_attempts: number;
+  monthly_price?: number;
+  six_month_price?: number;
+  till_prelims_price?: number;
+  prelims_date?: string;
 }
 
 export interface ResponseEntry {
