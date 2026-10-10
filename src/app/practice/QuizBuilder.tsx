@@ -14,7 +14,8 @@ import { IconCheck } from "@/components/icons";
 const COUNTS = [10, 20, 30];
 
 export function QuizBuilder() {
-  const { t, pick, taxonomy, user, profile, authReady, lang } = useApp();
+  const { t, pick, taxonomy, user, profile, authReady, lang, showPaywall } = useApp();
+  const isFree = profile?.subscription_tier !== "premium";
   const router = useRouter();
   const params = useSearchParams();
   const { getToken } = useAuth();

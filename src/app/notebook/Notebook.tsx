@@ -16,7 +16,8 @@ import { IconTrash } from "@/components/icons";
 interface MistakeRow { question_id: string; last_selected: OptionKey | null; times_missed: number; last_missed_at: string; question?: Question }
 
 export function Notebook() {
-  const { t, user, authReady, subjectName, topicName, pick, taxonomy, lang } = useApp();
+  const { t, user, authReady, subjectName, topicName, pick, taxonomy, lang, profile, showPaywall } = useApp();
+  const isFree = profile?.subscription_tier !== "premium";
   const router = useRouter();
   const { getToken } = useAuth();
   const [rows, setRows] = useState<MistakeRow[] | null>(null);

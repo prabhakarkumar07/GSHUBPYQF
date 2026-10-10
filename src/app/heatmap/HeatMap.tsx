@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/providers";
@@ -9,7 +9,8 @@ import { useAuth } from "@clerk/nextjs";
 interface Row { subject_id: number; topic_id: number | null; attempted: number; correct: number }
 
 export function HeatMap() {
-  const { t, user, authReady, taxonomy, pick, lang } = useApp();
+  const { t, user, authReady, taxonomy, pick, lang, profile, showPaywall } = useApp();
+  const isFree = profile?.subscription_tier !== "premium";
   const { getToken } = useAuth();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [active, setActive] = useState<number | null>(null);
