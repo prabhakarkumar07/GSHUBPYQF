@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
 import { useApp } from "@/components/providers";
 
@@ -14,7 +14,8 @@ declare global {
 
 export default function PricingPage() {
   const { getToken } = useAuth();
-  const { user, authReady, taxonomy } = useApp();
+  const { user } = useUser();
+  const { authReady, taxonomy } = useApp();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "six_months" | "till_prelims">("till_prelims");
@@ -76,8 +77,8 @@ export default function PricingPage() {
           }
         },
         prefill: {
-          name: user?.name || "Student",
-          email: user?.email || "",
+          name: user?.fullName || "Student",
+          email: user?.primaryEmailAddress?.emailAddress || "",
         },
         theme: {
           color: "#722F37", // Maroon branding

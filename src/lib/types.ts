@@ -1,4 +1,5 @@
 export type Lang = "en" | "hi";
+export interface AppUser { id: string; email?: string; name?: string; }
 export type OptionKey = "A" | "B" | "C" | "D" | "E";
 export type Difficulty = "easy" | "medium" | "hard";
 export type QuizMode = "practice" | "exam";
