@@ -1,6 +1,6 @@
 ﻿CREATE TABLE public.payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   plan_name TEXT NOT NULL,
   razorpay_order_id TEXT NOT NULL,
