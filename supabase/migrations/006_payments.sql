@@ -20,6 +20,6 @@ TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    WHERE profiles.id = (auth.jwt()->>'sub') AND profiles.role = 'admin'
   )
 );
