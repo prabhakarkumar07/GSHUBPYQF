@@ -86,7 +86,7 @@ export function Dashboard() {
       )}
 
       {dueFlashcards > 0 && (
-        <Link href={`/flashcards`} className="mb-5 flex items-center gap-4 rounded-2xl border border-blue-300 bg-blue-50 p-4 transition hover:shadow-md">
+        <Link href={`/flashcards`} className="mb-5 flex items-center gap-4 rounded-2xl border border-blue-300 bg-blue-50 p-4 transition-all hover:shadow-lg hover:-translate-y-0.5">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><IconNotebook /></span>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold uppercase tracking-wide text-blue-800">Spaced Repetition</div>
@@ -202,7 +202,7 @@ export function Dashboard() {
 
 function QuickLink({ href, icon, label, count }: { href: string; icon: React.ReactNode; label: string; count?: number }) {
   return (
-    <Link href={href} className="card flex items-center gap-3 p-3.5 transition hover:border-maroon/30">
+    <Link href={href} className="card card-hover flex items-center gap-3 p-3.5 transition-all cursor-pointer">
       <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-maroon-50 text-maroon">{icon}</span>
       <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{label}</span>
       {count !== undefined && <span className="rounded-full bg-maroon px-2 py-0.5 text-xs font-bold text-white">{count}</span>}

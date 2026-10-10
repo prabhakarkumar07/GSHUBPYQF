@@ -159,7 +159,7 @@ export function QuizBuilder() {
                 {subjects.map((sub) => {
                   const on = subjectIds.includes(sub.id);
                   return (
-                    <button key={sub.id} onClick={() => toggle(subjectIds, sub.id, setSubjectIds)} className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition ${on ? "border-maroon bg-maroon-50 ring-2 ring-maroon/10" : "border-maroon/10 bg-white hover:border-maroon/30"}`}>
+                    <button key={sub.id} onClick={() => toggle(subjectIds, sub.id, setSubjectIds)} className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition ${on ? "border-maroon bg-maroon-50 ring-2 ring-maroon/10" : "border-maroon/10 bg-white hover:border-maroon/30 hover:-translate-y-[2px] hover:shadow-md transition-all"}`}>
                       <span className="text-2xl" aria-hidden>{sub.icon}</span>
                       <span className="flex-1 font-semibold text-ink">{pick(sub.name_en, sub.name_hi)}</span>
                       <span className={`flex h-5 w-5 items-center justify-center rounded border ${on ? "border-maroon bg-maroon text-white" : "border-stone-300"}`}>{on && <IconCheck className="h-3.5 w-3.5" />}</span>
@@ -232,9 +232,9 @@ export function QuizBuilder() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 {COUNTS.map((c) => (
-                  <button key={c} onClick={() => setCount(c)} className={`rounded-xl border py-4 text-center font-display text-2xl font-bold transition ${count === c ? "border-maroon bg-maroon text-white" : "border-maroon/15 bg-white text-maroon hover:border-maroon/40"}`}>{c}</button>
+                  <button key={c} onClick={() => setCount(c)} className={`rounded-xl border py-4 text-center font-display text-2xl font-bold transition ${count === c ? "border-maroon bg-maroon text-white" : "border-maroon/15 bg-white text-maroon hover:border-maroon/40 hover:-translate-y-[2px] hover:shadow-md transition-all"}`}>{c}</button>
                 ))}
-                <button onClick={() => setCount(-1)} className={`rounded-xl border py-4 text-center font-semibold transition ${count === -1 ? "border-maroon bg-maroon text-white" : "border-maroon/15 bg-white text-maroon hover:border-maroon/40"}`}>{t("custom")}</button>
+                <button onClick={() => setCount(-1)} className={`rounded-xl border py-4 text-center font-semibold transition ${count === -1 ? "border-maroon bg-maroon text-white" : "border-maroon/15 bg-white text-maroon hover:border-maroon/40 hover:-translate-y-[2px] hover:shadow-md transition-all"}`}>{t("custom")}</button>
               </div>
               {count === -1 && (
                 <div className="max-w-xs">
@@ -248,7 +248,7 @@ export function QuizBuilder() {
           {step === 4 && (
             <div className="grid gap-3 sm:grid-cols-2">
               {(["practice", "exam"] as const).map((m) => (
-                <button key={m} onClick={() => setMode(m)} className={`rounded-2xl border p-5 text-left transition ${mode === m ? "border-maroon bg-maroon-50 ring-2 ring-maroon/15" : "border-maroon/10 bg-white hover:border-maroon/30"}`}>
+                <button key={m} onClick={() => setMode(m)} className={`rounded-2xl border p-5 text-left transition ${mode === m ? "border-maroon bg-maroon-50 ring-2 ring-maroon/15" : "border-maroon/10 bg-white hover:border-maroon/30 hover:-translate-y-[2px] hover:shadow-md transition-all"}`}>
                   <div className="text-lg font-bold text-maroon">{m === "practice" ? t("practice_mode") : t("exam_mode")}</div>
                   <p className="mt-1.5 text-sm text-stone-600">
                     {m === "practice" ? t("practice_mode_d") : `${t("exam_mode_d")} +${s.positive_marks} / âˆ’${s.negative_marks}.`}

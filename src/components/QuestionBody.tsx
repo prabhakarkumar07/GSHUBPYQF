@@ -39,7 +39,7 @@ export function QuestionBody({ q, selected, reveal, onSelect, communityCounts }:
         {q.options.map((o) => {
           const isSel = selected === o.key;
           const isCorrect = q.correct_option === o.key;
-          let cls = "border-maroon/15 bg-white hover:border-maroon/40";
+          let cls = "border-maroon/15 bg-white hover:border-maroon/40 hover:-translate-y-[1px] hover:shadow-md";
           if (!reveal && isSel) cls = "border-maroon bg-maroon-50 ring-2 ring-maroon/15";
           if (reveal && isCorrect) cls = "border-green-600 bg-green-50";
           else if (reveal && isSel && !isCorrect) cls = "border-red-500 bg-red-50";
@@ -53,7 +53,7 @@ export function QuestionBody({ q, selected, reveal, onSelect, communityCounts }:
               aria-checked={onSelect ? isSel : undefined}
               disabled={!onSelect}
               onClick={() => onSelect?.(o.key)}
-              className={`relative flex w-full items-start gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition disabled:cursor-default ${cls}`}
+              className={`relative flex w-full items-start gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-all duration-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:shadow-none ${cls}`}
             >
               {reveal && totalVotes > 0 && (
                 <span className="absolute inset-y-0 left-0 bg-stone-900/[.04]" style={{ width: `${(100 * votes) / totalVotes}%` }} aria-hidden />
