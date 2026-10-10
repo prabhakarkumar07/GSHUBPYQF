@@ -26,7 +26,7 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gold/30 bg-maroon/95 backdrop-blur-md text-white shadow-sm supports-[backdrop-filter]:bg-maroon/80">
+    <header className="sticky top-0 z-40 border-b border-gold/30 bg-maroon-900/95 backdrop-blur-md text-white shadow-sm supports-[backdrop-filter]:bg-maroon-900/85">
       <div className="container-page flex h-16 items-center justify-between gap-3">
         <Logo light />
         <nav className="hidden items-center gap-1 lg:flex">
