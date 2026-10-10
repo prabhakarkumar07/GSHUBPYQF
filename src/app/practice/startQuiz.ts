@@ -1,8 +1,8 @@
 "use client";
 import { getSupabase } from "@/lib/supabase/client";
 import { newId, saveSession } from "@/lib/quiz-store";
-import type { AppSettings, QuizMode, QuizSession, QuizSource } from "@/lib/types";
-import type { User } from "@supabase/supabase-js";
+import type { AppSettings, AppUser, QuizMode, QuizSession, QuizSource } from "@/lib/types";
+
 
 export interface BuildParams {
   subjectIds?: number[];
@@ -33,7 +33,7 @@ export async function startQuiz(opts: {
   source: QuizSource;
   title: string;
   config: Record<string, unknown>;
-  user: User | null;
+  user: AppUser | null;
   settings: AppSettings;
 }): Promise<string> {
   const id = newId();
