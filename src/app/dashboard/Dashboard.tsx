@@ -28,20 +28,25 @@ export function Dashboard() {
     (async () => {
       try {
         const token = await getToken();
-        const [dashRes, statRes, badgeRes, flashcardRes] = await Promise.all([
+        const [dashRes, statRes, badgeRes, flashcardRes] = await Promise.allSettled([
           fetchApi("/user/dashboard", {}, token),
           fetchApi("/user/analytics", {}, token),
           fetchApi("/user/badges", {}, token),
           fetchApi("/quiz/flashcards", {}, token),
         ]);
         
-        const list = (dashRes.attempts as Attempt[]) ?? [];
+        const dash = dashRes.status === "fulfilled" ? dashRes.value : {};
+        const stat = statRes.status === "fulfilled" ? statRes.value : {};
+        const badge = badgeRes.status === "fulfilled" ? badgeRes.value : {};
+        const flash = flashcardRes.status === "fulfilled" ? flashcardRes.value : {};
+
+        const list = (dash.attempts as Attempt[]) ?? [];
         setAttempts(list);
-        setMistakes(dashRes.mistakesCount ?? 0);
-        setBookmarks(dashRes.bookmarksCount ?? 0);
-        setAnalytics(statRes.analytics ?? []);
-        setBadges(badgeRes.badges ?? []);
-        setDueFlashcards(flashcardRes.flashcards?.length || 0);
+        setMistakes(dash.mistakesCount ?? 0);
+        setBookmarks(dash.bookmarksCount ?? 0);
+        setAnalytics(stat.analytics ?? []);
+        setBadges(badge.badges ?? []);
+        setDueFlashcards(flash.flashcards?.length || 0);
         
         const local = getActiveSession();
         const remote = list.find((x) => x.status === "in_progress");
