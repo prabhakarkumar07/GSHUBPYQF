@@ -1,13 +1,14 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { fetchApi } from "@/lib/api-client";
-import { getSupabase } from "@/lib/supabase/client";
+import { useClerkSupabase } from "@/lib/supabase/clerk-client";
 import { useApp } from "@/components/providers";
 
 export default function AdminRevenuePage() {
   const { getToken } = useAuth();
   const { taxonomy, reloadTaxonomy } = useApp();
+  const supabaseClient = useClerkSupabase();
   const [loading, setLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
   const [premiumUsers, setPremiumUsers] = useState(0);
@@ -28,8 +29,8 @@ export default function AdminRevenuePage() {
       setTotalUsers(users.length);
       setPremiumUsers(users.filter((u: any) => u.subscription_tier === "premium").length);
       
-      const sb = getSupabase(token);
-      const { data: payData } = await sb.from("payments").select("*, profiles(full_name)").order("created_at", { ascending: false }).limit(50);
+      const sb = supabaseClient;
+      const { data: payData } = await sb!.from("payments").select("*, profiles(full_name)").order("created_at", { ascending: false }).limit(50);
       if (payData) setPayments(payData);
       
     } catch (e) {
