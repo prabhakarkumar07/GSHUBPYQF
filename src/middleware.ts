@@ -12,6 +12,7 @@ const isProtected = createRouteMatcher([
 const isClerkInternal = createRouteMatcher([
   "/sso-callback(.*)",
   "/login(.*)",
+  "/signup(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

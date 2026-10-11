@@ -51,7 +51,10 @@ export function Header() {
                 </SignOutButton>
               </>
             ) : (
-              <Link href="/login" className="btn-gold !py-2">{t("login")}</Link>
+              <div className="flex items-center gap-2">
+                <Link href="/login" className="whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10">{t("login")}</Link>
+                <Link href="/signup" className="btn-gold !py-1.5 !px-3 text-xs">{t("signup")}</Link>
+              </div>
             )}
           </div>
           <button className="rounded-lg p-2 hover:bg-white/10 lg:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>
@@ -73,7 +76,10 @@ export function Header() {
                   <button onClick={() => setOpen(false)} className="w-full rounded-lg px-3 py-3 text-left text-white/80">{t("logout")}</button>
                 </SignOutButton>
               ) : (
-                <Link href="/login" onClick={() => setOpen(false)} className="btn-gold w-full">{t("login")} / {t("signup")}</Link>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/login" onClick={() => setOpen(false)} className="btn-outline !bg-white/10 !text-white !border-white/20 text-center w-full">{t("login")}</Link>
+                  <Link href="/signup" onClick={() => setOpen(false)} className="btn-gold text-center w-full">{t("signup")}</Link>
+                </div>
               )}
             </div>
           </nav>
