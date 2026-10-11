@@ -51,9 +51,10 @@ export function QuestionBody({ q, selected, reveal, onSelect, communityCounts }:
               type="button"
               role={onSelect ? "radio" : undefined}
               aria-checked={onSelect ? isSel : undefined}
+              aria-label={`Option ${o.key}`}
               disabled={!onSelect}
               onClick={() => onSelect?.(o.key)}
-              className={`relative flex w-full items-start gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition disabled:cursor-default ${cls}`}
+              className={`relative flex w-full items-start gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-maroon disabled:cursor-default ${cls}`}
             >
               {reveal && totalVotes > 0 && (
                 <span className="absolute inset-y-0 left-0 bg-stone-900/[.04]" style={{ width: `${(100 * votes) / totalVotes}%` }} aria-hidden />

@@ -38,13 +38,23 @@ export function ProfileGate() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <form onSubmit={save} className="w-full max-w-md space-y-3.5 rounded-t-3xl bg-white p-6 sm:rounded-3xl" role="dialog" aria-modal>
+      <form 
+        onSubmit={save} 
+        className="w-full max-w-md space-y-3.5 rounded-t-3xl bg-white p-6 sm:rounded-3xl shadow-2xl" 
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="profile-gate-title"
+        aria-describedby="profile-gate-desc"
+      >
         <div>
-          <h2 className="h-display text-xl">{t("complete_profile_title")}</h2>
-          <p className="mt-1 text-sm text-stone-600">{t("complete_profile_sub")}</p>
+          <h2 id="profile-gate-title" className="h-display text-xl">{t("complete_profile_title")}</h2>
+          <p id="profile-gate-desc" className="mt-1 text-sm text-stone-600">{t("complete_profile_sub")}</p>
         </div>
         <ProfileFields idPrefix="cp" mobile={mobile || profile.phone || ""} setMobile={setMobile} exam={exam || profile.target_exam || ""} setExam={setExam} />
         {err && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{err}</p>}
+        <p className="text-[11px] text-stone-500">
+          Your information is protected under our <a href="/privacy" target="_blank" className="text-maroon underline">Privacy Policy</a> and used only for exam-specific prep updates.
+        </p>
         <button className="btn-primary w-full py-3" disabled={busy}>{busy ? t("saving") : t("save_continue")}</button>
       </form>
     </div>

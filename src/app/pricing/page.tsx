@@ -171,8 +171,20 @@ export default function PricingPage() {
               <li className="flex items-center gap-3"><span className="text-gold">★</span> Peer comparison analytics</li>
             </ul>
 
+            <div className="mt-4 w-full rounded-xl bg-gold-100/50 p-3 text-left text-xs text-maroon-900">
+              <p className="font-semibold">✓ Transparent Pricing:</p>
+              <p className="mt-0.5 text-stone-600">All prices include applicable taxes. One-time fee, <strong>no automatic renewal</strong>. Access activated immediately.</p>
+            </div>
+
+            <p className="mt-4 text-xs text-stone-500">
+              By proceeding with payment, you agree to our{" "}
+              <a href="/terms" target="_blank" className="text-maroon underline">Terms</a>,{" "}
+              <a href="/privacy" target="_blank" className="text-maroon underline">Privacy Policy</a>, and{" "}
+              <a href="/refund-policy" target="_blank" className="text-maroon underline">Refund Policy</a>.
+            </p>
+
             <button 
-              className="btn-primary mt-6 w-full shadow-lg transition-all hover:shadow-xl"
+              className="btn-primary mt-4 w-full shadow-lg transition-all hover:shadow-xl"
               onClick={handleUpgrade}
               disabled={loading}
             >

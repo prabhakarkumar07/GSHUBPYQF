@@ -37,10 +37,16 @@ export function Footer() {
           <li><Link href="/bookmarks" className="hover:text-gold-300">{t("nav_bookmarks")}</Link></li>
           <li><Link href="/dashboard" className="hover:text-gold-300">{t("nav_dashboard")}</Link></li>
           <li><Link href="/about" className="hover:text-gold-300">{t("nav_about")}</Link></li>
-          <li><a href="https://gshubsite.com/new-courses" target="_blank" rel="noopener" className="font-semibold text-gold hover:text-gold-300">{lang === "hi" ? "पेड कोर्स ↗" : "Paid courses ↗"}</a></li>
+          <li><Link href="/privacy" className="hover:text-gold-300">Privacy Policy</Link></li>
+          <li><Link href="/terms" className="hover:text-gold-300">Terms of Service</Link></li>
+          <li><Link href="/refund-policy" className="hover:text-gold-300">Refund Policy</Link></li>
+          <li><Link href="/cookies" className="hover:text-gold-300">Cookie Policy</Link></li>
+          <li className="col-span-2 pt-1"><a href="https://gshubsite.com/new-courses" target="_blank" rel="noopener noreferrer" className="font-semibold text-gold hover:text-gold-300">{lang === "hi" ? "पेड कोर्स ↗" : "Paid courses ↗"}</a></li>
         </ul>
       </div>
-      <div className="border-t border-white/10 py-4 text-center text-xs text-white/50">© {new Date().getFullYear()} GS Hub Civil Services Classes · Trust the Process</div>
+      <div className="border-t border-white/10 py-4 text-center text-xs text-white/70">
+        © {new Date().getFullYear()} GS Hub Civil Services Classes · Rajendra Nagar, Patna · Trust the Process
+      </div>
     </footer>
   );
 }

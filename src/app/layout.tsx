@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { MobileTabs } from "@/components/MobileTabs";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { ProfileGate } from "@/components/ProfileGate";
+import { CookieConsent } from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   title: { default: "GS Hub BPSC PYQ Portal — Free BPSC Prelims Practice", template: "%s · GS Hub BPSC PYQ Portal" },
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MobileTabs />
           <FeedbackButton />
           <ProfileGate />
+          <CookieConsent />
         </AppProvider>
         </ClerkProvider>
       </body>
