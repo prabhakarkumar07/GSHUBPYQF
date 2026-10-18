@@ -12,6 +12,8 @@ export function Header() {
   const { t, user, isAdmin, profile } = useApp();
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const isLoginPage = path.startsWith("/login");
+  const isSignupPage = path.startsWith("/signup");
 
   const links = [
     { href: "/practice", label: t("nav_practice") },
@@ -24,6 +26,31 @@ export function Header() {
     { href: "/about", label: t("nav_about") },
     ...(isAdmin ? [{ href: "/admin", label: t("nav_admin") }] : []),
   ];
+
+  const loggedOutActions = (mobile = false) => {
+    const login = (
+      <Link
+        href="/login"
+        onClick={mobile ? () => setOpen(false) : undefined}
+        className={mobile ? "btn-outline !border-white/20 !bg-white/10 text-center !text-white" : "whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10"}
+      >
+        {t("login")}
+      </Link>
+    );
+    const signup = (
+      <Link
+        href="/signup"
+        onClick={mobile ? () => setOpen(false) : undefined}
+        className={mobile ? "btn-gold text-center" : "btn-gold !px-3 !py-1.5 text-xs"}
+      >
+        {t("signup")}
+      </Link>
+    );
+
+    if (isLoginPage) return signup;
+    if (isSignupPage) return login;
+    return mobile ? <div className="grid grid-cols-2 gap-2">{login}{signup}</div> : <div className="flex items-center gap-2">{login}{signup}</div>;
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-gold/30 bg-maroon-900/95 backdrop-blur-md text-white shadow-sm supports-[backdrop-filter]:bg-maroon-900/85">
@@ -51,10 +78,7 @@ export function Header() {
                 </SignOutButton>
               </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/login" className="whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10">{t("login")}</Link>
-                <Link href="/signup" className="btn-gold !py-1.5 !px-3 text-xs">{t("signup")}</Link>
-              </div>
+              loggedOutActions()
             )}
           </div>
           <button className="rounded-lg p-2 hover:bg-white/10 lg:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>
@@ -76,10 +100,7 @@ export function Header() {
                   <button onClick={() => setOpen(false)} className="w-full rounded-lg px-3 py-3 text-left text-white/80">{t("logout")}</button>
                 </SignOutButton>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/login" onClick={() => setOpen(false)} className="btn-outline !bg-white/10 !text-white !border-white/20 text-center w-full">{t("login")}</Link>
-                  <Link href="/signup" onClick={() => setOpen(false)} className="btn-gold text-center w-full">{t("signup")}</Link>
-                </div>
+                loggedOutActions(true)
               )}
             </div>
           </nav>

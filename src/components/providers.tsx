@@ -88,21 +88,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function loadOrCreateProfile() {
-      try {
-        const token = await getToken({ template: "supabase" });
-        const { profile: loadedProfile } = await fetchApi("/profile/loadOrCreate", {
-          method: "POST",
-          body: JSON.stringify({
-            user: {
-              id: clerkUser!.id,
-              name: clerkUser!.fullName,
-              email: clerkUser!.primaryEmailAddress?.emailAddress,
-            },
-          }),
-        }, token);
-        setProfile(loadedProfile as Profile);
-      } catch (err) {
-        console.error("Failed to load profile:", err);
+      const maxAttempts = 5;
+      let delay = 1000; // Start with 1 second delay
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const token = await getToken({ template: "supabase" });
+          const { profile: loadedProfile } = await fetchApi("/profile/loadOrCreate", {
+            method: "POST",
+            body: JSON.stringify({
+              user: {
+                id: clerkUser!.id,
+                name: clerkUser!.fullName,
+                email: clerkUser!.primaryEmailAddress?.emailAddress,
+              },
+            }),
+          }, token);
+          setProfile(loadedProfile as Profile);
+          return; // Success, exit the retry loop
+        } catch (err: any) {
+          // Only retry on "Missing user id" error, which suggests the user
+          // hasn't been propagated to Supabase auth yet (temporary issue)
+          if (err.message === "Missing user id" && attempt < maxAttempts - 1) {
+            console.log(`Profile load attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 1.5; // Increase delay by 50% each time
+            continue;
+          }
+          // For all other errors or if we've exhausted retries, log and give up
+          if (err.message === "Missing user id") {
+            console.error("Failed to load profile after multiple attempts. User may not be properly linked to Supabase auth.");
+          } else {
+            console.error("Failed to load profile:", err);
+          }
+          return;
+        }
       }
     }
 
@@ -151,7 +171,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return {
       lang, setLang,
       t: (key, vars) => translate(lang, key, vars),
-      pick, user, profile, isAdmin: profile?.role === "admin", authReady, profileLoaded: true, reloadProfile: async () => {},
+      pick, user, profile, isAdmin: profile?.role === "admin", authReady, profileLoaded: profile !== null, reloadProfile: async () => {},
       taxonomy, reloadTaxonomy, subjectName, topicName, examName, paywall, showPaywall,
     };
   }, [lang, setLang, user, profile, authReady, taxonomy, reloadTaxonomy, paywall, showPaywall]);

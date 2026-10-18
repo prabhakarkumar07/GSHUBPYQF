@@ -395,7 +395,7 @@ begin
     responses      = coalesce(p_responses, responses),
     status         = 'submitted',
     submitted_at   = now(),
-    time_taken_sec = greatest(0, least(coalesce(p_time_taken, 0), 86400)),
+    time_taken_sec = greatest(0, least(extract(epoch from (now() - started_at))::int, 86400)),
     correct_count  = v_correct,
     wrong_count    = v_wrong,
     skipped_count  = v_total - v_correct - v_wrong,

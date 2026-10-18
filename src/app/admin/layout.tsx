@@ -1,18 +1,26 @@
 import { redirect } from "next/navigation";
-import { getServerSupabase } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@supabase/supabase-js";
 import { AdminNav } from "./AdminNav";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, isSupabaseConfigured } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin" };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const sb = await getServerSupabase();
-  if (!sb) {
+  if (!isSupabaseConfigured) {
     return <div className="container-page py-16 text-center text-stone-600">Supabase is not configured — see README.</div>;
   }
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) redirect("/login?next=/admin");
-  const { data: profile } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
+
+  const { userId, getToken } = await auth();
+  if (!userId) redirect("/login?next=/admin");
+
+  const token = await getToken({ template: "supabase" });
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+  });
+  const { data: profile } = await sb.from("profiles").select("role").eq("id", userId).maybeSingle();
+
   if (profile?.role !== "admin") {
     return (
       <div className="container-page py-16 text-center">

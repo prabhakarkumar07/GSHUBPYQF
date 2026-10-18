@@ -1,5 +1,6 @@
 "use client";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { TooltipContentProps } from "recharts";
 import { useApp } from "./providers";
 
 interface SubjectStat {
@@ -7,6 +8,12 @@ interface SubjectStat {
   total: number;
   correct: number;
   accuracy: number;
+}
+
+interface SubjectChartDatum {
+  name: string;
+  accuracy: number;
+  total: number;
 }
 
 export function SubjectChart({ data }: { data: SubjectStat[] }) {
@@ -29,9 +36,9 @@ export function SubjectChart({ data }: { data: SubjectStat[] }) {
           <YAxis tick={{ fill: "#78716c", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
           <Tooltip
             cursor={{ fill: "rgba(114, 47, 55, 0.05)" }}
-            content={({ active, payload }) => {
+            content={({ active, payload }: TooltipContentProps) => {
               if (active && payload && payload.length) {
-                const d = payload[0].payload;
+                const d = payload[0].payload as SubjectChartDatum;
                 return (
                   <div className="rounded-lg border border-gold/40 bg-white p-3 shadow-lg">
                     <div className="font-bold text-maroon">{d.name}</div>

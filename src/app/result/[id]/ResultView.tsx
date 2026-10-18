@@ -53,6 +53,11 @@ export function ResultView() {
           
           qids = attempt.question_ids; responses = attempt.responses ?? {}; title = attempt.title ?? title; mode = attempt.mode;
           positive = Number(attempt.positive_marks); negative = Number(attempt.negative_marks); timeTaken = attempt.time_taken_sec ?? 0; synced = true;
+          const score = Number(attempt.score ?? 0);
+          const correctCount = Number(attempt.correct_count ?? 0);
+          const wrongCount = Number(attempt.wrong_count ?? 0);
+          const skippedCount = Number(attempt.skipped_count ?? 0);
+          const totalCount = Number(attempt.total_count ?? 0);
           
           (data.answers ?? []).forEach((r: any) => { effects[r.question_id] = r.notebook_effect; });
           ((data.stats as QuestionStat[]) ?? []).forEach((x) => { stats[x.question_id] = x; });
@@ -81,9 +86,81 @@ export function ResultView() {
         const ordered = qids.map((q) => byId.get(q)).filter(Boolean) as Question[];
         
         setBookmarks(new Set(bm.map((b: any) => b.question_id)));
+
+        // Generate graded questions array for impact analysis (needed for missed/tough questions)
+        const graded: GradedQuestion[] = ordered.map((q) => {
+          const selected = (responses[q.id]?.selected ?? null) as OptionKey | null;
+          const outcome: Outcome = !selected ? "skipped" : selected === q.correct_option ? "correct" : "wrong";
+          const st = stats[q.id];
+          const enough = st && st.attempts >= Math.max(1, taxonomy.settings.min_stats_attempts);
+          return {
+            question: q,
+            selected,
+            outcome,
+            communityPct: enough ? Math.round((100 * st.correct) / st.attempts) : null,
+            communityAttempts: st?.attempts ?? 0,
+          };
+        });
+
+        // Calculate bySubject and byTopic from graded array (similar to gradeQuiz function)
+        const bucket = (map: Map<number, { attempted: number; correct: number; wrong: number; skipped: number; total: number }>, id: number) => {
+          if (!map.has(id)) map.set(id, { attempted: 0, correct: 0, wrong: 0, skipped: 0, total: 0 });
+          return map.get(id)!;
+        };
+        const subjMap = new Map<number, { attempted: number; correct: number; wrong: number; skipped: number; total: number }>();
+        const topMap = new Map<number, { attempted: number; correct: number; wrong: number; skipped: number; total: number; subjectId: number }>();
+        for (const g of graded) {
+          const targets: { attempted: number; correct: number; wrong: number; skipped: number; total: number }[] = [bucket(subjMap, g.question.subject_id)];
+          if (g.question.topic_id) {
+            if (!topMap.has(g.question.topic_id)) topMap.set(g.question.topic_id, { attempted: 0, correct: 0, wrong: 0, skipped: 0, total: 0, subjectId: g.question.subject_id });
+            targets.push(topMap.get(g.question.topic_id)!);
+          }
+          for (const b of targets) {
+            b.total++;
+            if (g.outcome === "skipped") b.skipped++;
+            else { b.attempted++; if (g.outcome === "correct") b.correct++; else b.wrong++; }
+          }
+        }
+        const bySubject = Array.from(subjMap.values()).map(b => ({
+          id: b.attempted > 0 ? Array.from(subjMap.keys()).find(id => {
+            const bMap = subjMap.get(id)!;
+            return bMap.attempted === b.attempted && bMap.correct === b.correct && bMap.wrong === b.wrong && bMap.skipped === b.skipped && bMap.total === b.total;
+          }) ?? 0 : 0,
+          attempted: b.attempted,
+          correct: b.correct,
+          wrong: b.wrong,
+          skipped: b.skipped,
+          total: b.total
+        }));
+        const byTopic = Array.from(topMap.values()).map(b => ({
+          id: b.attempted > 0 ? Array.from(topMap.keys()).find(id => {
+            const bMap = topMap.get(id)!;
+            return bMap.attempted === b.attempted && bMap.correct === b.correct && bMap.wrong === b.wrong && bMap.skipped === b.skipped && bMap.total === b.total && bMap.subjectId === b.subjectId;
+          }) ?? 0 : 0,
+          attempted: b.attempted,
+          correct: b.correct,
+          wrong: b.wrong,
+          skipped: b.skipped,
+          total: b.total,
+          subjectId: b.subjectId
+        }));
+
+        // Calculate summary using attempt values where possible to avoid duplicating scoring logic
+        const accuracy = totalCount > 0 ? Math.round((correctCount * 100) / totalCount) : 0;
         setData({
           title, mode, timeTaken, synced, effects, stats, positive, negative,
-          summary: gradeQuiz(ordered, responses, positive, negative, stats, taxonomy.settings.min_stats_attempts),
+          summary: {
+            graded,
+            score: score,
+            maxScore: totalCount * positive,
+            correct: correctCount,
+            wrong: wrongCount,
+            skipped: skippedCount,
+            total: totalCount,
+            accuracy,
+            bySubject,
+            byTopic,
+          },
         });
         setState("ready");
       } catch (err) {

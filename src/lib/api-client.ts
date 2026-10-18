@@ -1,4 +1,10 @@
-﻿const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+function getApiBase() {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8000/api`;
+  }
+  return "http://localhost:8000/api";
+}
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}, clerkToken?: string | null) {
   const headers: Record<string, string> = {
@@ -10,7 +16,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}, cler
     headers["Authorization"] = `Bearer ${clerkToken}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${getApiBase()}${endpoint}`, {
     cache: "no-store", ...options,
     headers,
   });

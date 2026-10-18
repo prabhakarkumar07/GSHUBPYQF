@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.12.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "@tiptap/extension-image": "^2.27.3",
@@ -23,12 +24,14 @@
     "@tiptap/pm": "^2.27.3",
     "@tiptap/react": "^2.27.3",
     "@tiptap/starter-kit": "^2.27.3",
+    "@types/recharts": "^1.8.29",
     "dompurify": "^3.4.16",
     "next": "^15.5.27",
     "papaparse": "^5.7.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "read-excel-file": "^5.8.8"
+    "read-excel-file": "^5.8.8",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
