@@ -184,3 +184,6 @@ export function useApp(): AppCtx {
   if (!ctx) throw new Error("useApp must be used inside <AppProvider>");
   return ctx;
 }
+
+// Plan provider is exported from ./plan.tsx
+export { PlanProvider, usePlan } from "./plan";

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { AppProvider } from "@/components/providers";
+import { AppProvider, PlanProvider } from "@/components/providers";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MobileTabs } from "@/components/MobileTabs";
@@ -31,13 +31,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
         <ClerkProvider>
         <AppProvider>
-          <Header />
-          <main className="min-h-[60vh]">{children}</main>
-          <Footer />
-          <MobileTabs />
-          <FeedbackButton />
-          <ProfileGate />
-          <CookieConsent />
+          <PlanProvider>
+            <Header />
+            <main className="min-h-[60vh]">{children}</main>
+            <Footer />
+            <MobileTabs />
+            <FeedbackButton />
+            <ProfileGate />
+            <CookieConsent />
+          </PlanProvider>
         </AppProvider>
         </ClerkProvider>
       </body>

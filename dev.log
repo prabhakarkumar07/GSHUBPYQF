@@ -1,0 +1,12 @@
+
+> gshub-bpsc-pyq-portal@1.0.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use by process 23128, using available port 3001 instead.
+   ▲ Next.js 15.5.27
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.31.177:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.7s
